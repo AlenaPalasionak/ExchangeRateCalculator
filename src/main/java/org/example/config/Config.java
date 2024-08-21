@@ -27,7 +27,7 @@ public class Config {
                 throw new RuntimeException("Invalid config file");
             }
         }
-        Log.info("(Config) 3. Properties:  " + PROPERTIES.toString());
+        Log.info("(Config) 3. Properties:  " + PROPERTIES);
 
         return PROPERTIES;
     }
