@@ -13,14 +13,15 @@ public class GoogleSheetHandler {
     protected static final String accountantBookSpreadsheetId = Config.getProperties()
             .getProperty("accountant_book_spreadsheetId");
 
-    public static List<List<Object>> getListsWithCellContent(String range, int cellIndexName, String content) {
-        List<List<Object>> transactions = GoogleSheetHandler.getRangeList(range);
+    public static List<List<Object>> filterTableByCellContent(String range, int cellIndexName, String cellContent) {
+        List<List<Object>> transactions = GoogleSheetHandler.getSheetDataAsTable(range);
         transactions = transactions.stream().filter(transaction -> String.valueOf(transaction
-                .get(cellIndexName)).contains(content)).collect(Collectors.toList());
+                .get(cellIndexName)).contains(cellContent)).collect(Collectors.toList());
         return transactions;
     }
 
-    private static List<List<Object>> getRangeList(String range) {
+
+    private static List<List<Object>> getSheetDataAsTable(String range) {
         List<List<Object>> transactions;
         try {
             ValueRange result = service.spreadsheets().values()
