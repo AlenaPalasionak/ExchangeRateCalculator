@@ -1,4 +1,4 @@
-package org.example.core.constants;
+package org.example.tables.constants;
 
 public class AccountantBookConstant {
     public static final int INCOMING_PAYMENT_SUM = 0;

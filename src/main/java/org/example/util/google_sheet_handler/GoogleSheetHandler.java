@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class GoogleSheetHandler {
-    protected static final Sheets service = SheetsStart.getService();
-    protected static final String accountantBookSpreadsheetId = Config.getProperties()
+    private static final Sheets service = SheetsStart.getService();
+    private static final String accountantBookSpreadsheetId = Config.getProperties()
             .getProperty("accountant_book_spreadsheetId");
 
     public static List<List<Object>> filterTableByCellContent(String range, int cellIndexName, String cellContent) {
@@ -19,7 +19,6 @@ public class GoogleSheetHandler {
                 .get(cellIndexName)).contains(cellContent)).collect(Collectors.toList());
         return transactions;
     }
-
 
     private static List<List<Object>> getSheetDataAsTable(String range) {
         List<List<Object>> transactions;

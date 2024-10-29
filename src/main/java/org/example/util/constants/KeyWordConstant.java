@@ -1,4 +1,4 @@
-package org.example.util.google_sheet_handler.constants;
+package org.example.util.constants;
 
 public class KeyWordConstant {
     public static final String RUS_RUB = "рос";
