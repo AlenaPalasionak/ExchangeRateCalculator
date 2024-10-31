@@ -13,7 +13,7 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import org.example.Main;
-import org.example.util.logger.Log;
+import org.example.logger.Log;
 
 import java.io.*;
 import java.security.GeneralSecurityException;

@@ -1,6 +1,6 @@
 package org.example.config;
 
-import org.example.util.logger.Log;
+import org.example.logger.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
