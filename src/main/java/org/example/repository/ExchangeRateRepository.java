@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 public interface ExchangeRateRepository {
-    public Map<String, BigDecimal> getRateMap();
+    Map<String, BigDecimal> getExchangeRateMap();
     //Repository Pattern: Используется для абстракции доступа к данным.
     // Каждый репозиторий отвечает за чтение или запись данных из/в определенный источник
     // (Google Sheets, Excel).
