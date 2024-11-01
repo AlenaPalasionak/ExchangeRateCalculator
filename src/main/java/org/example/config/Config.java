@@ -11,7 +11,9 @@ import java.util.Objects;
 import java.util.Properties;
 
 public class Config {
+    public static final String SPREADSHEET_ID = getProperties().getProperty("accountant_book_spreadsheetId");
     private static final Properties PROPERTIES = new Properties();
+    public static final String EXCEL_FILE_PATH = getProperties().getProperty("rate_excel_file");
 
     public static Properties getProperties() {
         Reader reader;

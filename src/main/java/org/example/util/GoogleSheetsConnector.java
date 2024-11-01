@@ -1,4 +1,4 @@
-package org.example.util.google_sheet;
+package org.example.util;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -20,7 +20,7 @@ import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
 
-public class SheetsStart {
+public class GoogleSheetsConnector {
     private static final String APPLICATION_NAME = "Google Sheets API";
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
@@ -40,14 +40,11 @@ public class SheetsStart {
         }
     }
 
-    public static Sheets getService() {
-        try {
-            return new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials())
-                    .setApplicationName(APPLICATION_NAME)
-                    .build();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public static Sheets connectToSheets() throws IOException {
+
+        return new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials())
+                .setApplicationName(APPLICATION_NAME)
+                .build();
     }
 
     private static Credential getCredentials() throws IOException {
