@@ -1,37 +1,36 @@
 package org.example.service;
 
-import org.example.repository.AccountantBookRepository;
+import org.example.repository.AccountantBookRepositoryImpl;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.example.constants.AccountantBookConstant.SHEET_1_B_M;
 
 public class AccountantBookService {
-    AccountantBookRepository accountantBookRepository;
-    private List<List<Object>> transactionCache;
 
-    public AccountantBookService(AccountantBookRepository accountantBookRepository) {
+    private final List<List<Object>> transactionCache;
+    private List<List<Object>> filteredTransactionCache = null;
+
+    public AccountantBookService(AccountantBookRepositoryImpl accountantBookRepository) {
         this.transactionCache = accountantBookRepository.getSheetDataTableCache(SHEET_1_B_M);
     }
 
-    private List<List<Object>> filterTableByCellContent(int cellIndexName, String... cellContents) {
-        transactionCache = transactionCache.stream()
-                .filter(transaction -> {
-                    String cellValue = String.valueOf(transaction.get(cellIndexName));
-                    for (String content : cellContents) {
-                        if (cellValue.contains(content)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                })
-                .collect(Collectors.toList());
-
-        return transactionCache;
+    public List<List<Object>> getFilteredTableByCellContent(int cellIndexName, String... cellContents) {
+        if (filteredTransactionCache == null) {
+            filteredTransactionCache = filterTableByCellContent(cellIndexName, cellContents);
+        }
+        return filteredTransactionCache;
     }
 
-    private List<List<Object>> getTableInRusRubList(int paymentCellIndex, String currency) {
-        return filterTableByCellContent(paymentCellIndex, currency);
+    private List<List<Object>> filterTableByCellContent(int cellIndexName, String... cellContents) {
+        filteredTransactionCache = transactionCache.stream()
+                .filter(row -> {
+                    String cellValue = String.valueOf(row.get(cellIndexName));
+                    return Arrays.stream(cellContents).anyMatch(cellValue::contains);
+                })
+                .collect(Collectors.toList());
+        return filteredTransactionCache;
     }
 }

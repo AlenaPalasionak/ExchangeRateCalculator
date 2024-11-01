@@ -16,14 +16,20 @@ import java.util.stream.Collectors;
 
 import static org.example.constants.AccountantBookConstant.*;
 import static org.example.constants.AccountantBookConstant.OUTGOING_PAYMENT_SUM;
+import static org.example.constants.CurrencyConstant.*;
 
 public class TransactionService {
     private ExchangeRateRepository exchangeRateRepository;
+    private AccountantBookService accountantBookService;
+
     private Map<String, BigDecimal> exchangeRateCache;
+    private List<List<Object>> filteredTransactionCache;
 
-
-    public TransactionService(ExchangeRateRepository exchangeRateRepository) {
+    public TransactionService(ExchangeRateRepository exchangeRateRepository
+            , AccountantBookService accountantBookService) {
         this.exchangeRateCache = exchangeRateRepository.getExchangeRateTableCache();
+        this.filteredTransactionCache = accountantBookService.getFilteredTableByCellContent
+                (INCOMING_PAYMENT_SUM, RUS_RUB, DOLLAR, EURO);
     }
 
     private ExchangeRate createExchangeRate() {
@@ -35,16 +41,15 @@ public class TransactionService {
         return
     }
 
-    public List<Transaction> getTransactions(int paymentSumIndex, String currency) {
-        List<List<Object>> tableInRusRub = getTableInRusRubList(paymentSumIndex, currency);
-        List<Transaction> transactionsInRusRub = new ArrayList<>();
+    public List<Transaction> getTransactionsInForeignCurrency() {
+        List<Transaction> transactionsInForeignCurrency = new ArrayList<>();
 
-        for (List<Object> rowInRusRub : tableInRusRub) {
-            Transaction transaction = createTransactionFromRow(rowInRusRub);
+        for (List<Object> rowInForeignCurrency : filteredTransactionCache) {
+            Transaction transaction = createTransactionFromRow(rowInForeignCurrency);
 
-            transactionsInRusRub.add(transaction);
+            transactionsInForeignCurrency.add(transaction);
         }
-        return transactionsInRusRub;
+        return transactionsInForeignCurrency;
     }
 
     private Transaction createTransactionFromRow(List<Object> rowObject) {
@@ -84,8 +89,6 @@ public class TransactionService {
     private BigDecimal countIncomes(BigDecimal income, BigDecimal outgoings) {
         return income.subtract(outgoings);
     }
-
-
 
     private BigDecimal retrieveNum(int index, List<Object> objects) {
         return new BigDecimal(retrieveStr(index, objects).replaceAll("[а-я, А-Я]", ""));
