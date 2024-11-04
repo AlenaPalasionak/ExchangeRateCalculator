@@ -7,7 +7,7 @@ import org.example.repository.ExchangeRateRepository;
 import org.example.util.StringHelper;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +17,7 @@ import static org.example.constants.CurrencyConstant.*;
 public class ForeignCurrencyTransactionService {
 
     private final Map<String, BigDecimal> exchangeRateCache;
-    private final List<List<Object>> transactionTableInForeignCurrencyCache;
+    private final LinkedList<List<Object>> transactionTableInForeignCurrencyCache;
 
     public ForeignCurrencyTransactionService(ExchangeRateRepository exchangeRateRepository
             , AccountantBookService accountantBookService) {
@@ -26,8 +26,8 @@ public class ForeignCurrencyTransactionService {
                 (INCOMING_PAYMENT_SUM, RUS_RUB, DOLLAR, EURO);
     }
 
-    public List<Transaction> getTransactionsInForeignCurrency() {
-        List<Transaction> transactionsInForeignCurrency = new ArrayList<>();
+    public LinkedList<Transaction> getTransactionsInForeignCurrency() {
+        LinkedList<Transaction> transactionsInForeignCurrency = new LinkedList<>();
 
         for (List<Object> rowInForeignCurrency : this.transactionTableInForeignCurrencyCache) {
             Transaction transaction = createTransactionFromRow(rowInForeignCurrency);
@@ -41,7 +41,7 @@ public class ForeignCurrencyTransactionService {
         Payment incomingPayment = getIncomingPayment(rowObject);
         Payment outgoingPayment = getOutGoingPayment(rowObject);
         boolean accountantBalance = isBalance(rowObject);
-        String actDate = String.valueOf(rowObject.get(ACT_DATE));
+        String actDate = StringHelper.deleteYearSignFromStringDate(String.valueOf(rowObject.get(ACT_DATE)));
         BigDecimal incomes = countIncomes(rowObject);
         String actNumber = String.valueOf(rowObject.get(ACT_NUMBER));
         ExchangeRate actDateExchangeRate = getExchangeRate(rowObject, actDate);
@@ -51,21 +51,25 @@ public class ForeignCurrencyTransactionService {
     }
 
     private Payment getIncomingPayment(List<Object> rowObject) {
-        BigDecimal incomingPaymentSum = StringHelper.retrieveNumberFromString(rowObject, INCOMING_PAYMENT_SUM);
-        String incomingPaymentDate = StringHelper.deleteYearSignFromStringDate(rowObject, INCOMING_PAYMENT_DATE);
-        String currency = StringHelper.retrieveLettersFromString(rowObject, INCOMING_PAYMENT_SUM);
+        String incomingPaymentSumWithCurrency = String.valueOf(rowObject.get(INCOMING_PAYMENT_SUM));
+        BigDecimal incomingPaymentSum = StringHelper.retrieveNumberFromString(incomingPaymentSumWithCurrency);
+        String incomingPaymentDateWithYearSign = String.valueOf(rowObject.get(INCOMING_PAYMENT_DATE));
+        String incomingPaymentDate = StringHelper.deleteYearSignFromStringDate(incomingPaymentDateWithYearSign);
+        String currency = StringHelper.retrieveLettersFromString(incomingPaymentSumWithCurrency);
 
         return new Payment(incomingPaymentSum, incomingPaymentDate, getExchangeRate(rowObject
                 , incomingPaymentDate), currency);
     }
 
     private Payment getOutGoingPayment(List<Object> rowObject) {
-        BigDecimal outGoingPaymentSum = StringHelper.retrieveNumberFromString(rowObject, OUTGOING_PAYMENT_SUM);
-        String outGoingPaymentDate = StringHelper.deleteYearSignFromStringDate(rowObject, OUTGOING_PAYMENT_DATE);
-        String currency = StringHelper.retrieveLettersFromString(rowObject, OUTGOING_PAYMENT_SUM);
+        String outGoingPaymentSumWithCurrency = String.valueOf(rowObject.get(OUTGOING_PAYMENT_SUM));
 
-        return new Payment(outGoingPaymentSum, outGoingPaymentDate, getExchangeRate(rowObject
-                , outGoingPaymentDate), currency);
+        BigDecimal outGoingPaymentSum = StringHelper.retrieveNumberFromString(outGoingPaymentSumWithCurrency);
+        String outgoingPaymentDateWithYearSign = String.valueOf(rowObject.get(OUTGOING_PAYMENT_DATE));
+        String outgoingPaymentDate = StringHelper.deleteYearSignFromStringDate(outgoingPaymentDateWithYearSign);
+        String currency = StringHelper.retrieveLettersFromString(outGoingPaymentSumWithCurrency);
+        return new Payment(outGoingPaymentSum, outgoingPaymentDate, getExchangeRate(rowObject
+                , outgoingPaymentDate), currency);
     }
 
     private boolean isBalance(List<Object> rowObject) {
@@ -73,8 +77,11 @@ public class ForeignCurrencyTransactionService {
     }
 
     private BigDecimal countIncomes(List<Object> rowObject) {
-        BigDecimal income = StringHelper.retrieveNumberFromString(rowObject, INCOMING_PAYMENT_SUM);
-        BigDecimal outgoings = StringHelper.retrieveNumberFromString(rowObject, OUTGOING_PAYMENT_SUM);
+        String incomingPaymentSumWithCurrency = String.valueOf(rowObject.get(INCOMING_PAYMENT_SUM));
+        String outgoingPaymentSumWithCurrency = String.valueOf(rowObject.get(OUTGOING_PAYMENT_SUM));
+
+        BigDecimal income = StringHelper.retrieveNumberFromString(incomingPaymentSumWithCurrency);
+        BigDecimal outgoings = StringHelper.retrieveNumberFromString(outgoingPaymentSumWithCurrency);
         return income.subtract(outgoings);
     }
 
@@ -82,8 +89,6 @@ public class ForeignCurrencyTransactionService {
         BigDecimal rate = exchangeRateCache.get(paymentDate);
         return new ExchangeRate(paymentDate, rate);
     }
-
-
 
 //    public double calculateDifference(int paymentId, int exchangeRateId) {
 //        // Логика расчета курсовой разницы

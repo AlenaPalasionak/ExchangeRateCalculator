@@ -7,8 +7,8 @@ public class AccountantBookConstant {
     public static final int OUTGOING_PAYMENT_SUM = 3;
     public static final int OUTGOING_PAYMENT_DATE = 4;
     public static final int ACCOUNT_BALANCE = 5;
-    public static final int ACT_DATE = 8;
-    public static final int ACT_NUMBER = 12;
+    public static final int ACT_DATE = 7;
+    public static final int ACT_NUMBER = 11;
     public static final String DATE_FORMAT = "dd.MM.yyyy";
 
 }
