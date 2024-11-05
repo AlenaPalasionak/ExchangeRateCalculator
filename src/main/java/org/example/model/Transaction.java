@@ -6,14 +6,15 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @EqualsAndHashCode
 public class Transaction {
-    Payment incomingPayment;
-    Payment outgoingPayment;
+    List<Payment> incomingPaymentList;
+    List<Payment> outgoingPaymentList;
 
     private boolean accountBalance;
     private String actDate;

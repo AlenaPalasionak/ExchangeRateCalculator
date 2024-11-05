@@ -18,7 +18,6 @@ public class Config {
 
     public static Properties getProperties() {
         Reader reader;
-        assert PROPERTIES != null;
         if (PROPERTIES.isEmpty()) {
             String fileName = "file.properties";
             Log.info("(Config) 1. try to load PROPERTIES (properties file name is " + fileName + ")");

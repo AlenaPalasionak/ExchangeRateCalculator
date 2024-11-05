@@ -7,9 +7,7 @@ import org.example.repository.ExchangeRateRepository;
 import org.example.util.StringHelper;
 
 import java.math.BigDecimal;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.example.constants.AccountantBookConstant.*;
 import static org.example.constants.CurrencyConstant.*;
@@ -18,12 +16,13 @@ public class ForeignCurrencyTransactionService {
 
     private final Map<String, BigDecimal> exchangeRateCache;
     private final LinkedList<List<Object>> transactionTableInForeignCurrencyCache;
+    private BigDecimal incomingPaymentAmount;
 
     public ForeignCurrencyTransactionService(ExchangeRateRepository exchangeRateRepository
             , AccountantBookService accountantBookService) {
         this.exchangeRateCache = exchangeRateRepository.getExchangeRateTableCache();
         this.transactionTableInForeignCurrencyCache = accountantBookService.getFilteredTableByCellContent
-                (INCOMING_PAYMENT_SUM, RUS_RUB, DOLLAR, EURO);
+                (INCOMING_PAYMENT_AMOUNT, RUS_RUB, DOLLAR, EURO);
     }
 
     public LinkedList<Transaction> getTransactionsInForeignCurrency() {
@@ -38,38 +37,105 @@ public class ForeignCurrencyTransactionService {
     }
 
     private Transaction createTransactionFromRow(List<Object> rowObject) {
-        Payment incomingPayment = getIncomingPayment(rowObject);
-        Payment outgoingPayment = getOutGoingPayment(rowObject);
+        LinkedList<Payment> incomingPayments = buildIncomingPayment(rowObject);
+        LinkedList<Payment> outgoingPayments = buildOutgoingPayment(rowObject);
         boolean accountantBalance = isBalance(rowObject);
-        String actDate = StringHelper.deleteYearSignFromStringDate(String.valueOf(rowObject.get(ACT_DATE)));
+        String actDate = StringHelper.deleteLettersFromStringDate(String.valueOf(rowObject.get(ACT_DATE)));
         BigDecimal incomes = countIncomes(rowObject);
         String actNumber = String.valueOf(rowObject.get(ACT_NUMBER));
-        ExchangeRate actDateExchangeRate = getExchangeRate(rowObject, actDate);
+        ExchangeRate actDateExchangeRate = getExchangeRate(actDate);
 
-        return new Transaction(incomingPayment, outgoingPayment, accountantBalance
+        return new Transaction(incomingPayments, outgoingPayments, accountantBalance
                 , actDate, incomes, actNumber, actDateExchangeRate);
     }
 
-    private Payment getIncomingPayment(List<Object> rowObject) {
-        String incomingPaymentSumWithCurrency = String.valueOf(rowObject.get(INCOMING_PAYMENT_SUM));
-        BigDecimal incomingPaymentSum = StringHelper.retrieveNumberFromString(incomingPaymentSumWithCurrency);
-        String incomingPaymentDateWithYearSign = String.valueOf(rowObject.get(INCOMING_PAYMENT_DATE));
-        String incomingPaymentDate = StringHelper.deleteYearSignFromStringDate(incomingPaymentDateWithYearSign);
-        String currency = StringHelper.retrieveLettersFromString(incomingPaymentSumWithCurrency);
+    private LinkedList<Payment> buildIncomingPayment(List<Object> rowObject) {
+        LinkedHashMap<String, BigDecimal> paymentDateAndAmountMap;
+        LinkedList<Payment> payments = new LinkedList<>();
+        String paymentDateCellString = String.valueOf(rowObject.get(INCOMING_PAYMENT_DATE));
+        String paymentAmountCellString = String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT));
+        paymentDateAndAmountMap = buildPaymentDateAndAmountMap(paymentDateCellString
+                , paymentAmountCellString);
+        String currency = StringHelper.retrieveLettersFromString(paymentAmountCellString);
 
-        return new Payment(incomingPaymentSum, incomingPaymentDate, getExchangeRate(rowObject
-                , incomingPaymentDate), currency);
+        for (Map.Entry<String, BigDecimal> paymentDateAndAmountPair : paymentDateAndAmountMap.entrySet()) {
+            BigDecimal paymentAmount = paymentDateAndAmountPair.getValue();
+            String paymentDate = paymentDateAndAmountPair.getKey();
+            ExchangeRate exchangeRate = getExchangeRate(paymentDateAndAmountPair.getKey());
+            Payment payment = new Payment(paymentAmount, paymentDate, exchangeRate, currency);
+            payments.add(payment);
+        }
+
+        return payments;
     }
 
-    private Payment getOutGoingPayment(List<Object> rowObject) {
-        String outGoingPaymentSumWithCurrency = String.valueOf(rowObject.get(OUTGOING_PAYMENT_SUM));
+    private LinkedList<Payment> buildOutgoingPayment(List<Object> rowObject) {
+        LinkedHashMap<String, BigDecimal> paymentDateAndAmountMap;
+        LinkedList<Payment> payments = new LinkedList<>();
 
-        BigDecimal outGoingPaymentSum = StringHelper.retrieveNumberFromString(outGoingPaymentSumWithCurrency);
-        String outgoingPaymentDateWithYearSign = String.valueOf(rowObject.get(OUTGOING_PAYMENT_DATE));
-        String outgoingPaymentDate = StringHelper.deleteYearSignFromStringDate(outgoingPaymentDateWithYearSign);
-        String currency = StringHelper.retrieveLettersFromString(outGoingPaymentSumWithCurrency);
-        return new Payment(outGoingPaymentSum, outgoingPaymentDate, getExchangeRate(rowObject
-                , outgoingPaymentDate), currency);
+        String paymentDateCellString = String.valueOf(rowObject.get(OUTGOING_PAYMENT_DATE));
+        String paymentAmountCellString = String.valueOf(rowObject.get(OUTGOING_PAYMENT_AMOUNT));
+        paymentDateAndAmountMap = buildPaymentDateAndAmountMap(paymentDateCellString
+                , paymentAmountCellString);
+        String currency = StringHelper.retrieveLettersFromString(paymentAmountCellString);
+
+        for (Map.Entry<String, BigDecimal> paymentDateAndAmountPair : paymentDateAndAmountMap.entrySet()) {
+            BigDecimal paymentAmount = paymentDateAndAmountPair.getValue();
+            String paymentDate = paymentDateAndAmountPair.getKey();
+            ExchangeRate exchangeRate = getExchangeRate(paymentDateAndAmountPair.getKey());
+            Payment payment = new Payment(paymentAmount, paymentDate, exchangeRate, currency);
+            payments.add(payment);
+        }
+
+        return payments;
+    }
+
+    private LinkedHashMap<String, BigDecimal> buildPaymentDateAndAmountMap(String date, String amount) {
+        LinkedHashMap<String, BigDecimal> dateAndAmountMap = new LinkedHashMap<>();
+        BigDecimal paymentAmount = null;
+        String paymentDate = null;
+        if (date.contains("_")) {
+            String[] payments = date.split("_");
+            for (String payment : payments) {
+                String[] dateAndAmount = payment.split(":");
+
+try {
+
+     String s = String.valueOf(dateAndAmount[0]);
+    String cleanedInput = s.chars()
+            .filter(ch -> Character.isDigit(ch) || ch == '.')
+            .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+            .toString();
+    paymentAmount = new BigDecimal(cleanedInput);
+
+    String s2 = String.valueOf(dateAndAmount[0]);
+    String cleanedInput2 = s2.chars()
+            .filter(ch -> Character.isDigit(ch) || ch == '.')
+            .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+            .toString();
+
+    paymentAmount = new BigDecimal(cleanedInput);
+    paymentDate = (cleanedInput2);
+//                BigDecimal paymentAmount = StringHelper.retrieveNumberFromString
+//                        (dateAndAmount[0]);
+//                String paymentDate = StringHelper.deleteLettersFromStringDate
+//                        (dateAndAmount[1]);
+} catch (NumberFormatException e) {
+    System.out.println("Ошибка формата числа: |"+ dateAndAmount[0] +"| или |" +dateAndAmount[1] +"|"+ e.getMessage());
+//    for (char c : dateAndAmount[1].toCharArray()) {
+//        System.out.println("Символ: '" + c + "' Код: " + (int) c);
+//    }
+}
+
+                dateAndAmountMap.put(paymentDate, paymentAmount);
+
+            }
+        } else {
+            dateAndAmountMap.put(StringHelper.deleteLettersFromStringDate(date)
+                    , new BigDecimal(String.valueOf(StringHelper.retrieveNumberFromString(amount))));
+        }
+
+        return dateAndAmountMap;
     }
 
     private boolean isBalance(List<Object> rowObject) {
@@ -77,15 +143,15 @@ public class ForeignCurrencyTransactionService {
     }
 
     private BigDecimal countIncomes(List<Object> rowObject) {
-        String incomingPaymentSumWithCurrency = String.valueOf(rowObject.get(INCOMING_PAYMENT_SUM));
-        String outgoingPaymentSumWithCurrency = String.valueOf(rowObject.get(OUTGOING_PAYMENT_SUM));
+        String incomingPaymentSumWithCurrency = String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT));
+        String outgoingPaymentSumWithCurrency = String.valueOf(rowObject.get(OUTGOING_PAYMENT_AMOUNT));
 
         BigDecimal income = StringHelper.retrieveNumberFromString(incomingPaymentSumWithCurrency);
         BigDecimal outgoings = StringHelper.retrieveNumberFromString(outgoingPaymentSumWithCurrency);
         return income.subtract(outgoings);
     }
 
-    private ExchangeRate getExchangeRate(List<Object> rowObject, String paymentDate) {
+    private ExchangeRate getExchangeRate(String paymentDate) {
         BigDecimal rate = exchangeRateCache.get(paymentDate);
         return new ExchangeRate(paymentDate, rate);
     }
@@ -100,18 +166,18 @@ public class ForeignCurrencyTransactionService {
 //        //      currencyDiffRepository.save(currencyDiff);
 //
 //    }
-    //Service Pattern: Сервисный класс PaymentService отвечает за бизнес-логику.
-    // инкапсулирует бизнес-логику и взаимодействует с репозиториями.
+//Service Pattern: Сервисный класс PaymentService отвечает за бизнес-логику.
+// инкапсулирует бизнес-логику и взаимодействует с репозиториями.
 
-    // Он использует репозитории для получения данных о
-    // платежах и курсах, а также для сохранения курсовой разницы.
+// Он использует репозитории для получения данных о
+// платежах и курсах, а также для сохранения курсовой разницы.
 
-    // PaymentService использует PaymentRepository и ExchangeRateRepository
-    // для получения необходимых данных о платежах и курсах.
+// PaymentService использует PaymentRepository и ExchangeRateRepository
+// для получения необходимых данных о платежах и курсах.
 
-    //методы. принимает идентификаторы платежа и курса,
-    // выполняет необходимые расчеты и создает объект CurrencyDiff.
-    //+ calculateDifference(paymentId: int, exchangeRateId: int): double |
-    //
-    //| + saveCurrencyDiff(currencyDiff: CurrencyDiff): void |
+//методы. принимает идентификаторы платежа и курса,
+// выполняет необходимые расчеты и создает объект CurrencyDiff.
+//+ calculateDifference(paymentId: int, exchangeRateId: int): double |
+//
+//| + saveCurrencyDiff(currencyDiff: CurrencyDiff): void |
 }
