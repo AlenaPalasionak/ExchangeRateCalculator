@@ -16,16 +16,16 @@ public class AccountantBookRepositoryImpl implements AccountantBookRepository {
     @Override
     public List<List<Object>> getSheetDataTableCache(String range) {
         if (accountantBookTableCache == null) {
-            accountantBookTableCache = loadGoogleSheet(range);
+            accountantBookTableCache = loadGoogleSheetTable(range);
         }
         return accountantBookTableCache;
     }
 
     public void refreshAccountantBookTable(String range) {// сделать кнопку в интерфейсе GUI
-        accountantBookTableCache = loadGoogleSheet(range);
+        accountantBookTableCache = loadGoogleSheetTable(range);
     }
 
-    private List<List<Object>> loadGoogleSheet(String range) {
+    private List<List<Object>> loadGoogleSheetTable(String range) {
         List<List<Object>> accountantBookTable;
         final Sheets service;
         try {

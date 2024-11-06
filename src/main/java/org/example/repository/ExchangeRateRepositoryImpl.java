@@ -1,13 +1,13 @@
 package org.example.repository;
 
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
-import org.example.config.Config;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.example.constants.ExcelConstants;
+import org.example.exception.ExcelSheetAccessException;
+import org.example.util.ExcelFileConnector;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -16,10 +16,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.example.constants.AccountantBookConstant.DATE_FORMAT;
-import static org.example.constants.ExcelConstants.FIRST_EXCEL_SHEET;
 
 public class ExchangeRateRepositoryImpl implements ExchangeRateRepository {
-    private Map<String, BigDecimal> exchangeRateTableCache;
+    private Map<String, BigDecimal> exchangeRateTableCache = null;
 
     public Map<String, BigDecimal> getExchangeRateTableCache() {
         if (exchangeRateTableCache == null)
@@ -29,17 +28,16 @@ public class ExchangeRateRepositoryImpl implements ExchangeRateRepository {
 
     private Map<String, BigDecimal> loadExchangeRateTable() {
         Map<String, BigDecimal> exchangeRateTable = new LinkedHashMap<>();
-        try (FileInputStream exchangeRateFile = new FileInputStream(Config.EXCEL_FILE_PATH);
-             HSSFWorkbook workbook = new HSSFWorkbook(exchangeRateFile)) {
-            HSSFSheet sheet = workbook.getSheetAt(FIRST_EXCEL_SHEET);
+        try {
+            Sheet sheet = ExcelFileConnector.connectToSheets();
 
             int startRow = 5;
             for (int rowIndex = startRow; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
 
                 if (row != null) {
-                    Cell cellA = row.getCell(0);
-                    Cell cellAW = row.getCell(48);
+                    Cell cellA = row.getCell(ExcelConstants.A_ROW);
+                    Cell cellAW = row.getCell(ExcelConstants.AW_ROW);
 
                     if (cellA != null && cellAW != null) {
                         if (cellA.getCellType() == CellType.BLANK && cellAW.getCellType() == CellType.BLANK) {
@@ -54,8 +52,9 @@ public class ExchangeRateRepositoryImpl implements ExchangeRateRepository {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new ExcelSheetAccessException("Не удалось получить доступ к Excel таблице", e);
         }
+
         return exchangeRateTable;
     }
 }

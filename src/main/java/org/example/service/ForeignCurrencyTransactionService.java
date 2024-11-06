@@ -14,25 +14,25 @@ import static org.example.constants.CurrencyConstant.*;
 
 public class ForeignCurrencyTransactionService {
 
-    private final Map<String, BigDecimal> exchangeRateCache;
-    private final LinkedList<List<Object>> transactionTableInForeignCurrencyCache;
-    private BigDecimal incomingPaymentAmount;
+    private final Map<String, BigDecimal> exchangeRateTable;
+    private final LinkedList<List<Object>> transactionTableInForeignCurrency;
 
     public ForeignCurrencyTransactionService(ExchangeRateRepository exchangeRateRepository
             , AccountantBookService accountantBookService) {
-        this.exchangeRateCache = exchangeRateRepository.getExchangeRateTableCache();
-        this.transactionTableInForeignCurrencyCache = accountantBookService.getFilteredTableByCellContent
+        this.exchangeRateTable = exchangeRateRepository.getExchangeRateTableCache();
+        this.transactionTableInForeignCurrency = accountantBookService.getFilteredTableByCellContent
                 (INCOMING_PAYMENT_AMOUNT, RUS_RUB, DOLLAR, EURO);
     }
 
     public LinkedList<Transaction> getTransactionsInForeignCurrency() {
         LinkedList<Transaction> transactionsInForeignCurrency = new LinkedList<>();
 
-        for (List<Object> rowInForeignCurrency : this.transactionTableInForeignCurrencyCache) {
+        for (List<Object> rowInForeignCurrency : this.transactionTableInForeignCurrency) {
             Transaction transaction = createTransactionFromRow(rowInForeignCurrency);
 
             transactionsInForeignCurrency.add(transaction);
         }
+
         return transactionsInForeignCurrency;
     }
 
@@ -40,7 +40,7 @@ public class ForeignCurrencyTransactionService {
         LinkedList<Payment> incomingPayments = buildIncomingPayment(rowObject);
         LinkedList<Payment> outgoingPayments = buildOutgoingPayment(rowObject);
         boolean accountantBalance = isBalance(rowObject);
-        String actDate = StringHelper.deleteLettersFromStringDate(String.valueOf(rowObject.get(ACT_DATE)));
+        String actDate = StringHelper.retrieveDateFromString(String.valueOf(rowObject.get(ACT_DATE)));
         BigDecimal incomes = countIncomes(rowObject);
         String actNumber = String.valueOf(rowObject.get(ACT_NUMBER));
         ExchangeRate actDateExchangeRate = getExchangeRate(actDate);
@@ -50,31 +50,28 @@ public class ForeignCurrencyTransactionService {
     }
 
     private LinkedList<Payment> buildIncomingPayment(List<Object> rowObject) {
-        LinkedHashMap<String, BigDecimal> paymentDateAndAmountMap;
-        LinkedList<Payment> payments = new LinkedList<>();
+        LinkedList<Payment> payments;
         String paymentDateCellString = String.valueOf(rowObject.get(INCOMING_PAYMENT_DATE));
         String paymentAmountCellString = String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT));
-        paymentDateAndAmountMap = buildPaymentDateAndAmountMap(paymentDateCellString
-                , paymentAmountCellString);
-        String currency = StringHelper.retrieveLettersFromString(paymentAmountCellString);
-
-        for (Map.Entry<String, BigDecimal> paymentDateAndAmountPair : paymentDateAndAmountMap.entrySet()) {
-            BigDecimal paymentAmount = paymentDateAndAmountPair.getValue();
-            String paymentDate = paymentDateAndAmountPair.getKey();
-            ExchangeRate exchangeRate = getExchangeRate(paymentDateAndAmountPair.getKey());
-            Payment payment = new Payment(paymentAmount, paymentDate, exchangeRate, currency);
-            payments.add(payment);
-        }
+        payments = buildPayment(paymentDateCellString, paymentAmountCellString);
 
         return payments;
     }
 
     private LinkedList<Payment> buildOutgoingPayment(List<Object> rowObject) {
-        LinkedHashMap<String, BigDecimal> paymentDateAndAmountMap;
-        LinkedList<Payment> payments = new LinkedList<>();
+        LinkedList<Payment> payments;
 
         String paymentDateCellString = String.valueOf(rowObject.get(OUTGOING_PAYMENT_DATE));
         String paymentAmountCellString = String.valueOf(rowObject.get(OUTGOING_PAYMENT_AMOUNT));
+        payments = buildPayment(paymentDateCellString, paymentAmountCellString);
+
+        return payments;
+    }
+
+    private LinkedList<Payment> buildPayment( String paymentDateCellString, String paymentAmountCellString) {
+        LinkedHashMap<String, BigDecimal> paymentDateAndAmountMap;
+        LinkedList<Payment> payments = new LinkedList<>();
+
         paymentDateAndAmountMap = buildPaymentDateAndAmountMap(paymentDateCellString
                 , paymentAmountCellString);
         String currency = StringHelper.retrieveLettersFromString(paymentAmountCellString);
@@ -98,41 +95,18 @@ public class ForeignCurrencyTransactionService {
             String[] payments = date.split("_");
             for (String payment : payments) {
                 String[] dateAndAmount = payment.split(":");
-
-try {
-
-     String s = String.valueOf(dateAndAmount[0]);
-    String cleanedInput = s.chars()
-            .filter(ch -> Character.isDigit(ch) || ch == '.')
-            .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-            .toString();
-    paymentAmount = new BigDecimal(cleanedInput);
-
-    String s2 = String.valueOf(dateAndAmount[0]);
-    String cleanedInput2 = s2.chars()
-            .filter(ch -> Character.isDigit(ch) || ch == '.')
-            .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-            .toString();
-
-    paymentAmount = new BigDecimal(cleanedInput);
-    paymentDate = (cleanedInput2);
-//                BigDecimal paymentAmount = StringHelper.retrieveNumberFromString
-//                        (dateAndAmount[0]);
-//                String paymentDate = StringHelper.deleteLettersFromStringDate
-//                        (dateAndAmount[1]);
-} catch (NumberFormatException e) {
-    System.out.println("Ошибка формата числа: |"+ dateAndAmount[0] +"| или |" +dateAndAmount[1] +"|"+ e.getMessage());
-//    for (char c : dateAndAmount[1].toCharArray()) {
-//        System.out.println("Символ: '" + c + "' Код: " + (int) c);
-//    }
-}
-
-                dateAndAmountMap.put(paymentDate, paymentAmount);
-
+                int paymentAmountIndex = 0;
+                int paymentDateIndex = 1;
+                paymentAmount = new BigDecimal(dateAndAmount[paymentAmountIndex]
+                        .replaceAll("[^0-9]", ""));
+                paymentDate = StringHelper.retrieveDateFromString(dateAndAmount[paymentDateIndex]);
+//Log
             }
+            dateAndAmountMap.put(paymentDate, paymentAmount);
         } else {
-            dateAndAmountMap.put(StringHelper.deleteLettersFromStringDate(date)
-                    , new BigDecimal(String.valueOf(StringHelper.retrieveNumberFromString(amount))));
+             paymentAmount = new BigDecimal(String.valueOf(StringHelper.retrieveNumberFromString(amount)));
+             paymentDate = StringHelper.retrieveDateFromString(date);
+            dateAndAmountMap.put(paymentDate, paymentAmount);
         }
 
         return dateAndAmountMap;
@@ -152,7 +126,7 @@ try {
     }
 
     private ExchangeRate getExchangeRate(String paymentDate) {
-        BigDecimal rate = exchangeRateCache.get(paymentDate);
+        BigDecimal rate = exchangeRateTable.get(paymentDate);
         return new ExchangeRate(paymentDate, rate);
     }
 
