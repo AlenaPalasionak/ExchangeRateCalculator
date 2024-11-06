@@ -1,7 +1,9 @@
 package org.example.model;
 
-public class CurrencyDiff {
-    Transaction transaction;
+public class ForeignExchangeAdjustmentJournalEntry {
+    String entry;
+    private Transaction transactions;
+
     //CurrencyDiff сохраняется в базе данных через CurrencyDiffRepository.
 
   //  @Override

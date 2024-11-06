@@ -2,16 +2,17 @@ package org.example.repository;
 
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
+import org.example.config.Config;
 import org.example.exception.GoogleSheetsAccessException;
 import org.example.util.GoogleSheetsConnector;
 
 import java.io.IOException;
 import java.util.List;
 
-import static org.example.config.Config.SPREADSHEET_ID;
-
 public class AccountantBookRepositoryImpl implements AccountantBookRepository {
     private List<List<Object>> accountantBookTableCache = null;
+    public static final String ACCOUNTANT_BOOK_SPREADSHEET_ID_KEY = "accountant_book_spreadsheetId";
+    public static final String ACCOUNTANT_BOOK_SPREADSHEET_ID = Config.getProperties().getProperty(ACCOUNTANT_BOOK_SPREADSHEET_ID_KEY);
 
     @Override
     public List<List<Object>> getSheetDataTableCache(String range) {
@@ -31,7 +32,7 @@ public class AccountantBookRepositoryImpl implements AccountantBookRepository {
         try {
             service = GoogleSheetsConnector.connectToSheets();
             ValueRange result = service.spreadsheets().values()
-                    .get(SPREADSHEET_ID, range).execute();
+                    .get(ACCOUNTANT_BOOK_SPREADSHEET_ID, range).execute();
             accountantBookTable = result.getValues();
         } catch (IOException e) {
             throw new GoogleSheetsAccessException("Не удалось получить доступ к Google таблице", e);

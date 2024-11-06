@@ -21,7 +21,6 @@ public class DateConverter {
 
         exchangeDate.append(month).append("/").append(day).append("/").append(year);
 
-        //  System.out.println(exchangeDate);
         return exchangeDate.toString();
     }
 }
