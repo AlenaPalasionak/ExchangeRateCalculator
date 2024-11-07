@@ -1,25 +1,28 @@
 package org.example.model;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.example.model.non_operating_income.AbstractNonOperatingIncome;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @EqualsAndHashCode
+@RequiredArgsConstructor
 public class Transaction {
-    List<Payment> incomingPaymentList;
-    List<Payment> outgoingPaymentList;
+    private final List<Payment> incomingPaymentList;
+    private final List<Payment> outgoingPaymentList;
 
-    private boolean accountBalance;
-    private String actDate;
-    private BigDecimal incomes;
-    private String actNumber;
+    private final boolean accountBalance;
+    private final String actDate;
+    private final BigDecimal incomes;
+    private final String actNumber;
 
-    private ExchangeRate actDateExchangeRate;
+    private final ExchangeRate actDateExchangeRate;
+
+    private AbstractNonOperatingIncome nonOperatingIncome;
 }

@@ -1,6 +1,6 @@
 package org.example.service;
 
-import org.example.repository.AccountantBookRepositoryImpl;
+import org.example.repository.AccountantTable;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -9,12 +9,12 @@ import java.util.stream.Collectors;
 
 import static org.example.constants.AccountantBookConstant.SHEET_1_B_M;
 
-public class AccountantBookService {
+public class AccountantTableService {
 
     private final List<List<Object>> sheetDataTable;
     private LinkedList<List<Object>> filteredTableByCellContentCache = null;
 
-    public AccountantBookService(AccountantBookRepositoryImpl accountantBookRepository) {
+    public AccountantTableService(AccountantTable accountantBookRepository) {
         this.sheetDataTable = accountantBookRepository.getSheetDataTableCache(SHEET_1_B_M);
     }
 

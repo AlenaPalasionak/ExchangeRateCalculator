@@ -3,24 +3,26 @@ package org.example.service;
 import org.example.model.ExchangeRate;
 import org.example.model.Payment;
 import org.example.model.Transaction;
-import org.example.repository.ExchangeRateRepository;
+import org.example.repository.AccountantTableImpl;
 import org.example.util.StringHelper;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import static org.example.constants.AccountantBookConstant.*;
 import static org.example.constants.CurrencyConstant.*;
 
-public class ForeignCurrencyTransactionService {
-
-    private final Map<String, BigDecimal> exchangeRateTable;
+public class ForeignCurrencyAccountantTableService extends AccountantTableService {
+    private final ExchangeRateTableService exchangeRateService;
     private final LinkedList<List<Object>> transactionTableInForeignCurrency;
 
-    public ForeignCurrencyTransactionService(ExchangeRateRepository exchangeRateRepository
-            , AccountantBookService accountantBookService) {
-        this.exchangeRateTable = exchangeRateRepository.getExchangeRateTableCache();
-        this.transactionTableInForeignCurrency = accountantBookService.getFilteredTableByCellContent
+    public ForeignCurrencyAccountantTableService(ExchangeRateTableService exchangeRateService) {
+        super(new AccountantTableImpl());
+        this.exchangeRateService = exchangeRateService;
+        this.transactionTableInForeignCurrency = getFilteredTableByCellContent
                 (INCOMING_PAYMENT_AMOUNT, RUS_RUB, DOLLAR, EURO);
     }
 
@@ -43,7 +45,7 @@ public class ForeignCurrencyTransactionService {
         String actDate = StringHelper.retrieveDateFromString(String.valueOf(rowObject.get(ACT_DATE)));
         BigDecimal incomes = countIncomes(rowObject);
         String actNumber = String.valueOf(rowObject.get(ACT_NUMBER));
-        ExchangeRate actDateExchangeRate = getExchangeRate(actDate);
+        ExchangeRate actDateExchangeRate = exchangeRateService.getExchangeRate(actDate);
 
         return new Transaction(incomingPayments, outgoingPayments, accountantBalance
                 , actDate, incomes, actNumber, actDateExchangeRate);
@@ -68,25 +70,6 @@ public class ForeignCurrencyTransactionService {
         return payments;
     }
 
-    private LinkedList<Payment> buildPayment( String paymentDateCellString, String paymentAmountCellString) {
-        LinkedHashMap<String, BigDecimal> paymentDateAndAmountMap;
-        LinkedList<Payment> payments = new LinkedList<>();
-
-        paymentDateAndAmountMap = buildPaymentDateAndAmountMap(paymentDateCellString
-                , paymentAmountCellString);
-        String currency = StringHelper.retrieveLettersFromString(paymentAmountCellString);
-
-        for (Map.Entry<String, BigDecimal> paymentDateAndAmountPair : paymentDateAndAmountMap.entrySet()) {
-            BigDecimal paymentAmount = paymentDateAndAmountPair.getValue();
-            String paymentDate = paymentDateAndAmountPair.getKey();
-            ExchangeRate exchangeRate = getExchangeRate(paymentDateAndAmountPair.getKey());
-            Payment payment = new Payment(paymentAmount, paymentDate, exchangeRate, currency);
-            payments.add(payment);
-        }
-
-        return payments;
-    }
-
     private LinkedHashMap<String, BigDecimal> buildPaymentDateAndAmountMap(String date, String amount) {
         LinkedHashMap<String, BigDecimal> dateAndAmountMap = new LinkedHashMap<>();
         BigDecimal paymentAmount = null;
@@ -104,12 +87,31 @@ public class ForeignCurrencyTransactionService {
             }
             dateAndAmountMap.put(paymentDate, paymentAmount);
         } else {
-             paymentAmount = new BigDecimal(String.valueOf(StringHelper.retrieveNumberFromString(amount)));
-             paymentDate = StringHelper.retrieveDateFromString(date);
+            paymentAmount = new BigDecimal(String.valueOf(StringHelper.retrieveNumberFromString(amount)));
+            paymentDate = StringHelper.retrieveDateFromString(date);
             dateAndAmountMap.put(paymentDate, paymentAmount);
         }
 
         return dateAndAmountMap;
+    }
+
+    private LinkedList<Payment> buildPayment(String paymentDateCellString, String paymentAmountCellString) {
+        LinkedHashMap<String, BigDecimal> paymentDateAndAmountMap;
+        LinkedList<Payment> payments = new LinkedList<>();
+
+        paymentDateAndAmountMap = buildPaymentDateAndAmountMap(paymentDateCellString
+                , paymentAmountCellString);
+        String currency = StringHelper.retrieveLettersFromString(paymentAmountCellString);
+
+        for (Map.Entry<String, BigDecimal> paymentDateAndAmountPair : paymentDateAndAmountMap.entrySet()) {
+            BigDecimal paymentAmount = paymentDateAndAmountPair.getValue();
+            String paymentDate = paymentDateAndAmountPair.getKey();
+            ExchangeRate exchangeRate = exchangeRateService.getExchangeRate(paymentDateAndAmountPair.getKey());
+            Payment payment = new Payment(paymentAmount, paymentDate, exchangeRate, currency);
+            payments.add(payment);
+        }
+
+        return payments;
     }
 
     private boolean isBalance(List<Object> rowObject) {
@@ -123,11 +125,6 @@ public class ForeignCurrencyTransactionService {
         BigDecimal income = StringHelper.retrieveNumberFromString(incomingPaymentSumWithCurrency);
         BigDecimal outgoings = StringHelper.retrieveNumberFromString(outgoingPaymentSumWithCurrency);
         return income.subtract(outgoings);
-    }
-
-    private ExchangeRate getExchangeRate(String paymentDate) {
-        BigDecimal rate = exchangeRateTable.get(paymentDate);
-        return new ExchangeRate(paymentDate, rate);
     }
 
 //    public double calculateDifference(int paymentId, int exchangeRateId) {

@@ -17,7 +17,7 @@ import java.util.Map;
 
 import static org.example.constants.AccountantBookConstant.DATE_FORMAT;
 
-public class ExchangeRateRepositoryImpl implements ExchangeRateRepository {
+public class ExchangeRateTableImpl implements ExchangeRateTable {
     private Map<String, BigDecimal> exchangeRateTableCache = null;
 
     public Map<String, BigDecimal> getExchangeRateTableCache() {
