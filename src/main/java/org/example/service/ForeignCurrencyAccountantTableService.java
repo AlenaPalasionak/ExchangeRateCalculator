@@ -39,16 +39,17 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
     }
 
     private Transaction createTransactionFromRow(List<Object> rowObject) {
+        BigDecimal outstandingAmount = StringHelper.retrieveNumberFromString(String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT)));
         LinkedList<Payment> incomingPayments = buildIncomingPayment(rowObject);
         LinkedList<Payment> outgoingPayments = buildOutgoingPayment(rowObject);
         boolean accountantBalance = isBalance(rowObject);
         String actDate = StringHelper.retrieveDateFromString(String.valueOf(rowObject.get(ACT_DATE)));
-        BigDecimal incomes = countIncomes(rowObject);
+        BigDecimal commission = countCommission(rowObject);
         String actNumber = String.valueOf(rowObject.get(ACT_NUMBER));
         ExchangeRate actDateExchangeRate = exchangeRateService.getExchangeRate(actDate);
 
-        return new Transaction(incomingPayments, outgoingPayments, accountantBalance
-                , actDate, incomes, actNumber, actDateExchangeRate);
+        return new Transaction(outstandingAmount, incomingPayments, outgoingPayments, accountantBalance
+                , actDate, commission, actNumber, actDateExchangeRate);
     }
 
     private LinkedList<Payment> buildIncomingPayment(List<Object> rowObject) {
@@ -118,37 +119,12 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
         return String.valueOf(rowObject.get(ACCOUNT_BALANCE)).matches("\\d+");
     }
 
-    private BigDecimal countIncomes(List<Object> rowObject) {
+    private BigDecimal countCommission(List<Object> rowObject) {
         String incomingPaymentSumWithCurrency = String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT));
         String outgoingPaymentSumWithCurrency = String.valueOf(rowObject.get(OUTGOING_PAYMENT_AMOUNT));
 
-        BigDecimal income = StringHelper.retrieveNumberFromString(incomingPaymentSumWithCurrency);
+        BigDecimal commission = StringHelper.retrieveNumberFromString(incomingPaymentSumWithCurrency);
         BigDecimal outgoings = StringHelper.retrieveNumberFromString(outgoingPaymentSumWithCurrency);
-        return income.subtract(outgoings);
+        return commission.subtract(outgoings);
     }
-
-//    public double calculateDifference(int paymentId, int exchangeRateId) {
-//        // Логика расчета курсовой разницы
-//
-//    }
-
-//    public void saveCurrencyDiff(CurrencyDiff currencyDiff) {
-//
-//        //      currencyDiffRepository.save(currencyDiff);
-//
-//    }
-//Service Pattern: Сервисный класс PaymentService отвечает за бизнес-логику.
-// инкапсулирует бизнес-логику и взаимодействует с репозиториями.
-
-// Он использует репозитории для получения данных о
-// платежах и курсах, а также для сохранения курсовой разницы.
-
-// PaymentService использует PaymentRepository и ExchangeRateRepository
-// для получения необходимых данных о платежах и курсах.
-
-//методы. принимает идентификаторы платежа и курса,
-// выполняет необходимые расчеты и создает объект CurrencyDiff.
-//+ calculateDifference(paymentId: int, exchangeRateId: int): double |
-//
-//| + saveCurrencyDiff(currencyDiff: CurrencyDiff): void |
 }

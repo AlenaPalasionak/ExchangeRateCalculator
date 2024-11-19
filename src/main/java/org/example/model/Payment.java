@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class Payment {
-    private BigDecimal payment;
+    private BigDecimal paymentAmount;
     private String paymentDate;
     private ExchangeRate exchangeRate;
     private String currency;
