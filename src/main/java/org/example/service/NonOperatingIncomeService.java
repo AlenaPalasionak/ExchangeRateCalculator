@@ -37,14 +37,14 @@ public class NonOperatingIncomeService {
         return paymentAmountsSum.equals(outstandingAmount);
     }
 
-    public AbstractNonOperatingIncome getCarrierNonOperatingIncome() {
-
-        return
-    }
-
-    public AbstractNonOperatingIncome getCommissionNonOperatingIncome() {
-
-    }
+//    public AbstractNonOperatingIncome getCarrierNonOperatingIncome() {
+//
+//        return
+//    }
+//
+//    public AbstractNonOperatingIncome getCommissionNonOperatingIncome() {
+//
+//    }
 
     public AbstractNonOperatingIncome getNonOperatingIncomeFromCarrierSumWhenDoingPayment() {// возможно нужно чтобы принимал
         //Transaction, чтобы можно было возвращать один объект
@@ -74,7 +74,7 @@ public class NonOperatingIncomeService {
             }
         }
 
-        return nonOperatingIncome;// нужно еще определить ентри в зависимости - +
+        return null;//nonOperatingIncome;// нужно еще определить ентри в зависимости - +
     }
 }
 
