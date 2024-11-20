@@ -28,5 +28,8 @@ public class Transaction {
 
     private final ExchangeRate actDateExchangeRate;
 
-    private AbstractNonOperatingIncome nonOperatingIncome;
+    private final AbstractNonOperatingIncome whenBeingPayedIncome;
+    private final AbstractNonOperatingIncome commissionIncome;
+    private final AbstractNonOperatingIncome whenDoingPaymentIncome;
+    private final AbstractNonOperatingIncome accountIncome;
 }

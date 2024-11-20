@@ -1,6 +1,6 @@
 package org.example.constants;
 
-public class AccountantBookConstant {
+public class AccountantBookConstants {
     public static final String SHEET_1_B_M = "Sheet1!B:N";
     public static final int INCOMING_PAYMENT_AMOUNT = 0;
     public static final int INCOMING_PAYMENT_DATE = 1;

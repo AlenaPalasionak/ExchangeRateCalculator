@@ -7,7 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.example.constants.AccountantBookConstant.SHEET_1_B_M;
+import static org.example.constants.AccountantBookConstants.SHEET_1_B_M;
 
 public class AccountantTableService {
 

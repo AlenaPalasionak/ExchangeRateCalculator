@@ -15,7 +15,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.example.constants.AccountantBookConstant.DATE_FORMAT;
+import static org.example.constants.AccountantBookConstants.DATE_FORMAT;
 
 public class ExchangeRateTableImpl implements ExchangeRateTable {
     private Map<String, BigDecimal> exchangeRateTableCache = null;

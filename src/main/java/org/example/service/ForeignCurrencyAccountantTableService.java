@@ -12,8 +12,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import static org.example.constants.AccountantBookConstant.*;
-import static org.example.constants.CurrencyConstant.*;
+import static org.example.constants.AccountantBookConstants.*;
+import static org.example.constants.CurrencyConstants.*;
 
 public class ForeignCurrencyAccountantTableService extends AccountantTableService {
     private final ExchangeRateTableService exchangeRateService;
