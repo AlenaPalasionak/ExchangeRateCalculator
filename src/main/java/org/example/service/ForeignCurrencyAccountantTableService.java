@@ -39,7 +39,9 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
     }
 
     private Transaction createTransactionFromRow(List<Object> rowObject) {
-        BigDecimal outstandingAmount = StringHelper.retrieveNumberFromString(String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT)));
+        BigDecimal receivableAmount = StringHelper.retrieveNumberFromString(String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT)));
+        BigDecimal payableAmount = StringHelper.retrieveNumberFromString(String.valueOf(rowObject.get(OUTGOING_PAYMENT_AMOUNT)));
+
         LinkedList<Payment> incomingPayments = buildIncomingPayment(rowObject);
         LinkedList<Payment> outgoingPayments = buildOutgoingPayment(rowObject);
         boolean accountantBalance = isBalance(rowObject);
@@ -48,7 +50,7 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
         String actNumber = String.valueOf(rowObject.get(ACT_NUMBER));
         ExchangeRate actDateExchangeRate = exchangeRateService.getExchangeRate(actDate);
 
-        return new Transaction(outstandingAmount, incomingPayments, outgoingPayments, accountantBalance
+        return new Transaction(receivableAmount, payableAmount, incomingPayments, outgoingPayments, accountantBalance
                 , actDate, commission, actNumber, actDateExchangeRate);
     }
 

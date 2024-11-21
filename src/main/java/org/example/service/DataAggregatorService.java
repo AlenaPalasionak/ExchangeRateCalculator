@@ -1,10 +1,10 @@
 package org.example.service;
 
 public class DataAggregatorService {
-    private final NonOperatingIncomeService currencyDifferenceService;
+    private final ExchangeIncomeService currencyDifferenceService;
     private final ForeignCurrencyAccountantTableService transactionService;
 
-    public DataAggregatorService(NonOperatingIncomeService currencyDifferenceService,
+    public DataAggregatorService(ExchangeIncomeService currencyDifferenceService,
                                  ForeignCurrencyAccountantTableService transactionService) {
         this.currencyDifferenceService = currencyDifferenceService;
         this.transactionService = transactionService;

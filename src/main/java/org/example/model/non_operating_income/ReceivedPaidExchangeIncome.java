@@ -7,6 +7,5 @@ import lombok.Setter;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class FromBeingPayedNonOperatingIncome extends AbstractNonOperatingIncome {
-
+public class ReceivedPaidExchangeIncome extends AbstractExchangeIncome {
 }

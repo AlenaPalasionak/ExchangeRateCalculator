@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @EqualsAndHashCode
-public abstract class AbstractNonOperatingIncome {
+public abstract class AbstractExchangeIncome {
     public BigDecimal income;
     public String journalEntry;
 }

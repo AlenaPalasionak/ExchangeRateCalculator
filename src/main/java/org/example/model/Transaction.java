@@ -1,7 +1,7 @@
 package org.example.model;
 
 import lombok.*;
-import org.example.model.non_operating_income.AbstractNonOperatingIncome;
+import org.example.model.non_operating_income.AbstractExchangeIncome;
 
 import java.math.BigDecimal;
 import java.util.LinkedList;
@@ -12,7 +12,8 @@ import java.util.LinkedList;
 @NoArgsConstructor
 public class Transaction {
 
-    private BigDecimal outstandingAmount;
+    private BigDecimal receivableAmount;
+    private BigDecimal payableAmount;
     private LinkedList<Payment> incomingPaymentList;
     private LinkedList<Payment> outgoingPaymentList;
     private boolean accountBalance;
@@ -21,15 +22,17 @@ public class Transaction {
     private String actNumber;
     private ExchangeRate actDateExchangeRate;
 
-    private AbstractNonOperatingIncome fromBeingPayedIncome;
-    private AbstractNonOperatingIncome commissionIncome;
-    private AbstractNonOperatingIncome fromDoingPaymentIncome;
-    private AbstractNonOperatingIncome accountIncome;
+    private AbstractExchangeIncome actPaymentExchangeIncome;
+    private AbstractExchangeIncome commissionExchangeIncome;
+    private AbstractExchangeIncome accountExchangeIncome;
+    private AbstractExchangeIncome receivedPaidExchangeIncome;
 
-    public Transaction(BigDecimal outstandingAmount, LinkedList<Payment> incomingPaymentList
-            , LinkedList<Payment> outgoingPaymentList, boolean accountBalance, String actDate
-            , BigDecimal commission, String actNumber, ExchangeRate actDateExchangeRate) {
-        this.outstandingAmount = outstandingAmount;
+    public Transaction(BigDecimal receivableAmount, BigDecimal payableAmount
+            , LinkedList<Payment> incomingPaymentList, LinkedList<Payment> outgoingPaymentList
+            , boolean accountBalance, String actDate, BigDecimal commission, String actNumber
+            , ExchangeRate actDateExchangeRate) {
+        this.receivableAmount = receivableAmount;
+        this.payableAmount = payableAmount;
         this.incomingPaymentList = incomingPaymentList;
         this.outgoingPaymentList = outgoingPaymentList;
         this.accountBalance = accountBalance;
