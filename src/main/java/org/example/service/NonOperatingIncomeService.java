@@ -1,9 +1,10 @@
 package org.example.service;
 
+import org.example.constants.JournalEntryConstants;
 import org.example.model.Payment;
 import org.example.model.Transaction;
 import org.example.model.non_operating_income.AbstractNonOperatingIncome;
-import org.example.model.non_operating_income.WhenBeingPayedNonOperatingIncome;
+import org.example.model.non_operating_income.FromBeingPayedNonOperatingIncome;
 
 import java.math.BigDecimal;
 import java.util.LinkedList;
@@ -19,16 +20,12 @@ public class NonOperatingIncomeService {
 
     public List<Transaction> buildTransaction() {
         for (Transaction transaction : transactions) {
-            transaction.set
+            transaction.setFromBeingPayedIncome(buildFromBeingPayedIncome(transaction));
         }
     }
 
     public BigDecimal count(BigDecimal rate1, BigDecimal rate2, BigDecimal amount) {
         return (rate1.subtract(rate2)).multiply(amount);
-    }
-
-    private boolean isEnoughForCommission(BigDecimal amount, BigDecimal commission) {
-        return amount.compareTo(commission) >= 0;
     }
 
     private boolean isOutstandingAmountFullyPaid(Transaction transaction, List<Payment> payments) {
@@ -50,9 +47,9 @@ public class NonOperatingIncomeService {
 //
 //    }
 
-    public AbstractNonOperatingIncome getWhenBeingPayedIncome(Transaction transaction) {// возможно нужно чтобы принимал
+    private AbstractNonOperatingIncome buildFromBeingPayedIncome(Transaction transaction) {// возможно нужно чтобы принимал
 
-        AbstractNonOperatingIncome whenBeingPayedIncome = new WhenBeingPayedNonOperatingIncome();
+        AbstractNonOperatingIncome fromBeingPayedIncome = new FromBeingPayedNonOperatingIncome();
 
         LinkedList<Payment> incomingPayments = transaction.getIncomingPaymentList();
         boolean isOutstandingAmountFullyPaid = isOutstandingAmountFullyPaid(transaction, incomingPayments);
@@ -78,13 +75,15 @@ public class NonOperatingIncomeService {
                 }
             }
 
-            whenBeingPayedIncome.setIncome(nonOperatingIncomeAmount);
+            fromBeingPayedIncome.setIncome(nonOperatingIncomeAmount);
             if (nonOperatingIncomeAmount.compareTo(BigDecimal.ZERO) >= 0) {
-               whenBeingPayedIncome.setJournalEntry();
+                fromBeingPayedIncome.setJournalEntry(JournalEntryConstants.ENTRY_62_11_60_11);
+            } else {
+                fromBeingPayedIncome.setJournalEntry(JournalEntryConstants.ENTRY_60_11_62_11);
             }
         }
 
-        return null;//nonOperatingIncome;// нужно еще определить ентри в зависимости - +
+        return fromBeingPayedIncome;
     }
 }
 
