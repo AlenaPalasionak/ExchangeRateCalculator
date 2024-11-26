@@ -4,7 +4,7 @@ import org.example.model.Transaction;
 
 import java.util.List;
 
-public interface NonOperatingIncomeTable {
+public interface ExchangeIncomeTable {
 
     public void writeData(List<Transaction> transactions);
 }
