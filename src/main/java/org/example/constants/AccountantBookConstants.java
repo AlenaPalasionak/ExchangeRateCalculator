@@ -11,4 +11,5 @@ public class AccountantBookConstants {
     public static final int ACT_NUMBER = 11;
     public static final String DATE_FORMAT = "dd.MM.yyyy";
 
+    public static final int SINGLE_PAYMENT_INDEX = 0;
 }

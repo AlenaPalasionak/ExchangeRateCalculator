@@ -1,41 +1,76 @@
 package org.example.service;
 
+import org.example.constants.AccountantBookConstants;
 import org.example.constants.JournalEntryConstants;
+import org.example.model.ExchangeRate;
 import org.example.model.Payment;
 import org.example.model.Transaction;
-import org.example.model.non_operating_income.AbstractExchangeIncome;
-import org.example.model.non_operating_income.ActPaymentExchangeIncome;
-import org.example.model.non_operating_income.CommissionExchangeIncome;
+import org.example.model.non_operating_income.*;
+import org.example.util.StringHelper;
 
 import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.example.constants.AccountantBookConstants.*;
+import static org.example.constants.AccountantBookConstants.ACT_NUMBER;
+import static org.example.constants.CurrencyConstants.*;
+
 public class ExchangeIncomeService {
     ForeignCurrencyAccountantTableService foreignCurrencyAccountantTableService;
-    LinkedList<Transaction> transactions;
+    private final ExchangeRateTableService exchangeRateService;
+    private final LinkedList<List<Object>> transactionTableInForeignCurrency;
 
-    public ExchangeIncomeService(ForeignCurrencyAccountantTableService foreignCurrencyAccountantTableService) {
+    public ExchangeIncomeService(ForeignCurrencyAccountantTableService foreignCurrencyAccountantTableService, ExchangeRateTableService exchangeRateService) {
         this.foreignCurrencyAccountantTableService = foreignCurrencyAccountantTableService;
+        this.transactionTableInForeignCurrency = foreignCurrencyAccountantTableService.getFilteredTableByCellContent
+                (INCOMING_PAYMENT_AMOUNT, RUS_RUB, DOLLAR, EURO);
+        this.exchangeRateService = exchangeRateService;
     }
 
-    public List<Transaction> completeTransactionBuilding() {
-        LinkedList<Transaction> transactions = foreignCurrencyAccountantTableService.getTransactionsInForeignCurrency();
-        for (Transaction transaction : transactions) {
-            transaction.setActPaymentExchangeIncome(buildActPaymentExchangeIncome(transaction));
-            transaction.setCommissionExchangeIncome(buildCommissionExchangeIncome(transaction));
-            transaction.setReceivedPaidExchangeIncome(buildReceivedPaidExchangeIncome(transaction));
-            transaction.setAccountExchangeIncome(buildAccountExchangeIncome(transaction));
+    public LinkedList<Transaction> getTransactions() {
+        LinkedList<Transaction> transactionsInForeignCurrency = new LinkedList<>();
+
+        for (List<Object> rowInForeignCurrency : this.transactionTableInForeignCurrency) {
+            Transaction transaction = createTransaction(rowInForeignCurrency);
+
+            transactionsInForeignCurrency.add(transaction);
         }
-        return transactions;
+
+        return transactionsInForeignCurrency;
     }
 
-    public BigDecimal count(BigDecimal rate1, BigDecimal rate2, BigDecimal amount) {
+    private Transaction createTransaction(List<Object> rowObject) {
+        BigDecimal receivableAmount = StringHelper.retrieveNumberFromString(String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT)));
+        BigDecimal payableAmount = StringHelper.retrieveNumberFromString(String.valueOf(rowObject.get(OUTGOING_PAYMENT_AMOUNT)));
+
+        LinkedList<Payment> incomingPayments = foreignCurrencyAccountantTableService.buildIncomingPayment(rowObject);
+        LinkedList<Payment> outgoingPayments = foreignCurrencyAccountantTableService.buildOutgoingPayment(rowObject);
+        boolean accountantBalance = foreignCurrencyAccountantTableService.isBalance(rowObject);
+        String actDate = StringHelper.retrieveDateFromString(String.valueOf(rowObject.get(ACT_DATE)));
+        BigDecimal commissionAmount = foreignCurrencyAccountantTableService.countCommission(rowObject);
+        String actNumber = String.valueOf(rowObject.get(ACT_NUMBER));
+        ExchangeRate actDateExchangeRate = exchangeRateService.getExchangeRate(actDate);
+        BigDecimal actDateExchangeRateAmount = exchangeRateService.getExchangeRateAmount(actDate);
+
+        ActPaymentExchangeIncome actPaymentExchangeIncome = buildActPaymentExchangeIncome
+                (incomingPayments, commissionAmount, actDateExchangeRateAmount, payableAmount, receivableAmount);
+
+        CommissionExchangeIncome commissionExchangeIncome = buildCommissionExchangeIncome(incomingPayments
+                , commissionAmount, actDateExchangeRateAmount, receivableAmount);
+        ReceivedPaidExchangeIncome receivedPaidExchangeIncome = buildReceivedPaidExchangeIncome();
+        AccountExchangeIncome accountExchangeIncome = buildAccountExchangeIncome();
+
+        return new Transaction(receivableAmount, payableAmount, incomingPayments, outgoingPayments, accountantBalance
+                , actDate, commissionAmount, actNumber, actDateExchangeRate, actPaymentExchangeIncome
+                , commissionExchangeIncome, receivedPaidExchangeIncome, accountExchangeIncome);
+    }
+
+    private BigDecimal count(BigDecimal rate1, BigDecimal rate2, BigDecimal amount) {
         return (rate1.subtract(rate2)).multiply(amount);
     }
 
-    private boolean isReceivableAmountFullyPaid(Transaction transaction, List<Payment> payments) {
-        BigDecimal receivableAmount = transaction.getReceivableAmount();
+    private boolean isReceivableAmountFullyPaid(BigDecimal receivableAmount, List<Payment> payments) {
         BigDecimal paymentAmountsSum = BigDecimal.ZERO;
         for (Payment payment : payments) {
             paymentAmountsSum = paymentAmountsSum.add(payment.getPaymentAmount());
@@ -44,37 +79,39 @@ public class ExchangeIncomeService {
         return paymentAmountsSum.equals(receivableAmount);
     }
 
-    private AbstractExchangeIncome buildActPaymentExchangeIncome(Transaction transaction) {// возможно нужно чтобы принимал
+    private ActPaymentExchangeIncome buildActPaymentExchangeIncome(LinkedList<Payment> incomingPayments
+            , BigDecimal commissionAmount, BigDecimal actDateExchangeRateAmount, BigDecimal payableAmount
+            , BigDecimal receivableAmount) {
 
-        AbstractExchangeIncome actPaymentExchangeIncome = new ActPaymentExchangeIncome();
+        ActPaymentExchangeIncome actPaymentExchangeIncome = new ActPaymentExchangeIncome();
 
-        LinkedList<Payment> incomingPayments = transaction.getIncomingPaymentList();
-        boolean isReceivableAmountFullyPaid = isReceivableAmountFullyPaid(transaction, incomingPayments);
-        BigDecimal commissionAmount = transaction.getCommission();
-        BigDecimal actDateExchangeRate = transaction.getActDateExchangeRate().getRate();
-        BigDecimal payableAmount = transaction.getPayableAmount();
+        boolean isReceivableAmountFullyPaid = isReceivableAmountFullyPaid(receivableAmount, incomingPayments);
         BigDecimal accumulatedPayments = BigDecimal.ZERO;
         BigDecimal actPaymentExchangeIncomeAmount = BigDecimal.ZERO;
-        boolean isCommissionPayed = false;
+        boolean isCommissionSubtracted = false;
+
         if (incomingPayments.size() > 1 && isReceivableAmountFullyPaid) {
-            for (Payment payment : incomingPayments) {
+            for (Payment payment : incomingPayments) {//пойдем по всем платежам
                 BigDecimal incomingPaymentAmount = payment.getPaymentAmount();
-                accumulatedPayments = accumulatedPayments.add(incomingPaymentAmount);
-                if (accumulatedPayments.compareTo(commissionAmount) > 0) {
-                    if (!isCommissionPayed) {
+                accumulatedPayments = accumulatedPayments.add(incomingPaymentAmount);//складываем всеплатежи тут
+                if (accumulatedPayments.compareTo(commissionAmount) > 0) {// если платежи привысили комиссию
+                    if (!isCommissionSubtracted) {// если комиссия не вычтена из платежей
                         incomingPaymentAmount = incomingPaymentAmount.subtract(commissionAmount);
-                        isCommissionPayed = true;
-                    }
+                        isCommissionSubtracted = true;
+                    }//коммиссия вычтена
                     BigDecimal incomingPaymentRate = payment.getExchangeRate().getRate();
-                    actPaymentExchangeIncomeAmount = actPaymentExchangeIncomeAmount.add((count(actDateExchangeRate, incomingPaymentRate
-                            , incomingPaymentAmount)));
-                } else continue;
+                    actPaymentExchangeIncomeAmount = count(actDateExchangeRateAmount, incomingPaymentRate
+                            , incomingPaymentAmount);
+                    actPaymentExchangeIncomeAmount = actPaymentExchangeIncomeAmount.add(actPaymentExchangeIncomeAmount);
+                }//конец если платежи привысили комиссию
             }
-        } else {
-            BigDecimal incomingPaymentRate = incomingPayments.get(0).getPaymentAmount();
-            actPaymentExchangeIncomeAmount = actPaymentExchangeIncomeAmount.add((count(actDateExchangeRate, incomingPaymentRate
-                    , payableAmount)));
+        } else {// если платеж был 1
+            BigDecimal incomingPaymentRate = incomingPayments.get(SINGLE_PAYMENT_INDEX).getPaymentAmount();
+            actPaymentExchangeIncomeAmount = count(actDateExchangeRateAmount, incomingPaymentRate
+                    , payableAmount);
+            actPaymentExchangeIncomeAmount = actPaymentExchangeIncomeAmount.add(actPaymentExchangeIncomeAmount);
         }
+
         actPaymentExchangeIncome.setIncome(actPaymentExchangeIncomeAmount);
         if (isPositiveOrZero(actPaymentExchangeIncomeAmount)) {
             actPaymentExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_62_11_60_11);
@@ -85,38 +122,36 @@ public class ExchangeIncomeService {
         return actPaymentExchangeIncome;
     }
 
-    private AbstractExchangeIncome buildCommissionExchangeIncome(Transaction transaction) {
-        AbstractExchangeIncome commissionIncome = new CommissionExchangeIncome();
+    private CommissionExchangeIncome buildCommissionExchangeIncome(LinkedList<Payment> incomingPayments
+            , BigDecimal commissionAmount, BigDecimal actDateExchangeRateAmount, BigDecimal receivableAmount) {
+        CommissionExchangeIncome commissionIncome = new CommissionExchangeIncome();
 //(курс даты акта – курс даты опл. Нам)* сумма комиссии
-        LinkedList<Payment> incomingPayments = transaction.getIncomingPaymentList();
-        boolean isOutstandingAmountFullyPaid = isReceivableAmountFullyPaid(transaction, incomingPayments);
-        BigDecimal commission = transaction.getCommission();
-        BigDecimal actDateExchangeRate = transaction.getActDateExchangeRate().getRate();
+        boolean isOutstandingAmountFullyPaid = isReceivableAmountFullyPaid(receivableAmount, incomingPayments);
 
         if (incomingPayments.size() > 1 & isOutstandingAmountFullyPaid) {
             BigDecimal accumulatedPayments = BigDecimal.ZERO;
             BigDecimal commissionExchangeIncomeAmount = BigDecimal.ZERO;
             for (Payment payment : incomingPayments) {
                 accumulatedPayments = accumulatedPayments.add(payment.getPaymentAmount());
-                if (accumulatedPayments.compareTo(commission) < 0) {
+                if (accumulatedPayments.compareTo(commissionAmount) < 0) {
                     BigDecimal incomingPaymentRate = payment.getExchangeRate().getRate();
                     BigDecimal incomingPaymentAmountWithoutCommission = payment.getPaymentAmount()
-                            .subtract(commission);
-                    commissionExchangeIncomeAmount = commissionExchangeIncomeAmount.add((count(actDateExchangeRate, incomingPaymentRate
+                            .subtract(commissionAmount);
+                    commissionExchangeIncomeAmount = commissionExchangeIncomeAmount.add((count(actDateExchangeRateAmount, incomingPaymentRate
                             , incomingPaymentAmountWithoutCommission)));
                 } else {
                     BigDecimal incomingPaymentRate = payment.getExchangeRate().getRate();
                     BigDecimal incomingPaymentAmount = payment.getPaymentAmount();
-                    commissionExchangeIncomeAmount = commissionExchangeIncomeAmount.add(count(actDateExchangeRate, incomingPaymentRate
+                    commissionExchangeIncomeAmount = commissionExchangeIncomeAmount.add(count(actDateExchangeRateAmount, incomingPaymentRate
                             , incomingPaymentAmount));
                 }
             }
 
-            actPaymentExchangeIncome.setIncome(commissionExchangeIncomeAmount);
+            commissionIncome.setIncome(commissionExchangeIncomeAmount);
             if (isPositiveOrZero(commissionExchangeIncomeAmount)) {
-                actPaymentExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_62_11_60_11);
+                commissionIncome.setJournalEntry(JournalEntryConstants.ENTRY_62_11_60_11);
             } else {
-                actPaymentExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_60_11_62_11);
+                commissionIncome.setJournalEntry(JournalEntryConstants.ENTRY_60_11_62_11);
             }
         }
 

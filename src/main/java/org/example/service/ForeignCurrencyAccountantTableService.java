@@ -2,7 +2,6 @@ package org.example.service;
 
 import org.example.model.ExchangeRate;
 import org.example.model.Payment;
-import org.example.model.Transaction;
 import org.example.repository.AccountantTableImpl;
 import org.example.util.StringHelper;
 
@@ -13,48 +12,17 @@ import java.util.List;
 import java.util.Map;
 
 import static org.example.constants.AccountantBookConstants.*;
-import static org.example.constants.CurrencyConstants.*;
 
 public class ForeignCurrencyAccountantTableService extends AccountantTableService {
+
     private final ExchangeRateTableService exchangeRateService;
-    private final LinkedList<List<Object>> transactionTableInForeignCurrency;
 
     public ForeignCurrencyAccountantTableService(ExchangeRateTableService exchangeRateService) {
         super(new AccountantTableImpl());
         this.exchangeRateService = exchangeRateService;
-        this.transactionTableInForeignCurrency = getFilteredTableByCellContent
-                (INCOMING_PAYMENT_AMOUNT, RUS_RUB, DOLLAR, EURO);
     }
 
-    public LinkedList<Transaction> getTransactionsInForeignCurrency() {
-        LinkedList<Transaction> transactionsInForeignCurrency = new LinkedList<>();
-
-        for (List<Object> rowInForeignCurrency : this.transactionTableInForeignCurrency) {
-            Transaction transaction = createTransactionFromRow(rowInForeignCurrency);
-
-            transactionsInForeignCurrency.add(transaction);
-        }
-
-        return transactionsInForeignCurrency;
-    }
-
-    private Transaction createTransactionFromRow(List<Object> rowObject) {
-        BigDecimal receivableAmount = StringHelper.retrieveNumberFromString(String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT)));
-        BigDecimal payableAmount = StringHelper.retrieveNumberFromString(String.valueOf(rowObject.get(OUTGOING_PAYMENT_AMOUNT)));
-
-        LinkedList<Payment> incomingPayments = buildIncomingPayment(rowObject);
-        LinkedList<Payment> outgoingPayments = buildOutgoingPayment(rowObject);
-        boolean accountantBalance = isBalance(rowObject);
-        String actDate = StringHelper.retrieveDateFromString(String.valueOf(rowObject.get(ACT_DATE)));
-        BigDecimal commission = countCommission(rowObject);
-        String actNumber = String.valueOf(rowObject.get(ACT_NUMBER));
-        ExchangeRate actDateExchangeRate = exchangeRateService.getExchangeRate(actDate);
-
-        return new Transaction(receivableAmount, payableAmount, incomingPayments, outgoingPayments, accountantBalance
-                , actDate, commission, actNumber, actDateExchangeRate);
-    }
-
-    private LinkedList<Payment> buildIncomingPayment(List<Object> rowObject) {
+    LinkedList<Payment> buildIncomingPayment(List<Object> rowObject) {
         LinkedList<Payment> payments;
         String paymentDateCellString = String.valueOf(rowObject.get(INCOMING_PAYMENT_DATE));
         String paymentAmountCellString = String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT));
@@ -63,7 +31,7 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
         return payments;
     }
 
-    private LinkedList<Payment> buildOutgoingPayment(List<Object> rowObject) {
+    LinkedList<Payment> buildOutgoingPayment(List<Object> rowObject) {
         LinkedList<Payment> payments;
 
         String paymentDateCellString = String.valueOf(rowObject.get(OUTGOING_PAYMENT_DATE));
@@ -73,7 +41,7 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
         return payments;
     }
 
-    private LinkedHashMap<String, BigDecimal> buildPaymentDateAndAmountMap(String date, String amount) {
+    LinkedHashMap<String, BigDecimal> buildPaymentDateAndAmountMap(String date, String amount) {
         LinkedHashMap<String, BigDecimal> dateAndAmountMap = new LinkedHashMap<>();
         BigDecimal paymentAmount = null;
         String paymentDate = null;
@@ -98,7 +66,7 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
         return dateAndAmountMap;
     }
 
-    private LinkedList<Payment> buildPayment(String paymentDateCellString, String paymentAmountCellString) {
+    LinkedList<Payment> buildPayment(String paymentDateCellString, String paymentAmountCellString) {
         LinkedHashMap<String, BigDecimal> paymentDateAndAmountMap;
         LinkedList<Payment> payments = new LinkedList<>();
 
@@ -117,11 +85,11 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
         return payments;
     }
 
-    private boolean isBalance(List<Object> rowObject) {
+    boolean isBalance(List<Object> rowObject) {
         return String.valueOf(rowObject.get(ACCOUNT_BALANCE)).matches("\\d+");
     }
 
-    private BigDecimal countCommission(List<Object> rowObject) {
+    BigDecimal countCommission(List<Object> rowObject) {
         String incomingPaymentSumWithCurrency = String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT));
         String outgoingPaymentSumWithCurrency = String.valueOf(rowObject.get(OUTGOING_PAYMENT_AMOUNT));
 

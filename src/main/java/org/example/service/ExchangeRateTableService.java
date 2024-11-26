@@ -16,4 +16,9 @@ public class ExchangeRateTableService {
         BigDecimal rate = exchangeRateTable.get(paymentDate);
         return new ExchangeRate(paymentDate, rate);
     }
+
+    public BigDecimal getExchangeRateAmount(String paymentDate) {
+        return exchangeRateTable.get(paymentDate);
+    }
+
 }
