@@ -219,8 +219,8 @@ public class ExchangeIncomeService {
                 while (incomingIterator.hasNext() || outgoingIterator.hasNext()) {
                     BigDecimal incomingPaymentAmount;
                     BigDecimal outgoingPaymentAmount = BigDecimal.ZERO;
-
                     BigDecimal outgoingPaymentRate = outgoingPayments.get(outgoingPayments.size() - 1).getExchangeRate().getRate();// курс последнего платежа
+
                     if (outgoingIterator.hasNext()) {
                         outgoingPayment = outgoingIterator.next();
                         outgoingPaymentAmount = outgoingPayment.getPaymentAmount();
@@ -251,7 +251,7 @@ public class ExchangeIncomeService {
                                 remainderMap.put(remainderIncomingPayment, incomingPaymentRate);
                                 receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRate, outgoingPaymentRate
                                         , outgoingPaymentAmount));
-                            } else if (incomingPaymentAmount.compareTo(outgoingPaymentAmount) < 0) {
+                            } else if (incomingPaymentAmount.compareTo(outgoingPaymentAmount) < 0 || Objects.equals(outgoingPaymentAmount, BigDecimal.ZERO)) {
                                 receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRate, outgoingPaymentRate
                                         , incomingPaymentAmount));
                             }
