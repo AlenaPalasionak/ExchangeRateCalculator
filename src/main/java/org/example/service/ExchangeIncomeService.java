@@ -11,9 +11,7 @@ import org.example.model.non_operating_income.ReceivedVSPaidExchangeIncome;
 import org.example.util.StringHelper;
 
 import java.math.BigDecimal;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import static org.example.constants.AccountantBookConstants.*;
 import static org.example.constants.CurrencyConstants.*;
@@ -134,8 +132,7 @@ public class ExchangeIncomeService {
         BigDecimal commissionExchangeIncomeAmount = BigDecimal.ZERO;
 
         if (incomingPayments.size() > 1 & isReceivableAmountFullyPaid) {
-//            BigDecimal accumulatedPayments = BigDecimal.ZERO;
-//            BigDecimal commissionExchangeIncomeAmount = BigDecimal.ZERO;
+
             for (Payment payment : incomingPayments) {
                 BigDecimal incomingPaymentAmount = payment.getPaymentAmount();
                 accumulatedPayments = accumulatedPayments.add(incomingPaymentAmount);
@@ -163,8 +160,12 @@ public class ExchangeIncomeService {
         return commissionIncome;
     }
 
+    private boolean isPositiveOrZero(BigDecimal number) {
+        return number.compareTo(BigDecimal.ZERO) >= 0;
+    }
+
     private ReceivedVSPaidExchangeIncome buildReceivedVSPaidExchangeIncome(LinkedList<Payment> incomingPayments
-            , LinkedList<Payment> outgoingPayments, BigDecimal actDateExchangeRateAmount, BigDecimal receivableAmount
+            , LinkedList<Payment> outgoingPayments, BigDecimal receivableAmount
             , BigDecimal payableAmount, BigDecimal commissionAmount) {
 
         ReceivedVSPaidExchangeIncome receivedVSPaidExchangeIncome = new ReceivedVSPaidExchangeIncome();
@@ -172,111 +173,112 @@ public class ExchangeIncomeService {
         boolean isPayableAmountFullyPaid = isAmountFullyPaid(payableAmount, outgoingPayments);
         boolean isReceivableAmountFullyPaid = isAmountFullyPaid(receivableAmount, incomingPayments);
 
-        BigDecimal outgoingAccumulatedPayments = BigDecimal.ZERO;
-        BigDecimal incomingAccumulatedPayments = BigDecimal.ZERO;
-
         BigDecimal receivedVSPaidExchangeIncomeAmount = BigDecimal.ZERO;
-        BigDecimal completionCertificateVSPaymentExchangeIncomeAmount = BigDecimal.ZERO;
 
-        BigDecimal accumulatedPayments = BigDecimal.ZERO;
+        BigDecimal accumulatedIncomingPayments = BigDecimal.ZERO;
         boolean isCommissionSubtracted = false;
 
-        if (incomingPayments.size() > 1 && isReceivableAmountFullyPaid) {
-            for (Payment payment : incomingPayments) {//пойдем по всем платежам
-                BigDecimal incomingPaymentAmount = payment.getPaymentAmount();
-                accumulatedPayments = accumulatedPayments.add(incomingPaymentAmount);//складываем всеплатежи тут
-                if (accumulatedPayments.compareTo(commissionAmount) > 0) {// если платежи привысили комиссию
-                    if (!isCommissionSubtracted) {// если комиссия не вычтена из платежей
-                        incomingPaymentAmount = incomingPaymentAmount.subtract(commissionAmount);
-                        isCommissionSubtracted = true;
-                    }//коммиссия вычтена
-                    BigDecimal incomingPaymentRate = payment.getExchangeRate().getRate();
-                    completionCertificateVSPaymentExchangeIncomeAmount = count(actDateExchangeRateAmount, incomingPaymentRate
-                            , incomingPaymentAmount);
-                    completionCertificateVSPaymentExchangeIncomeAmount = completionCertificateVSPaymentExchangeIncomeAmount.add(completionCertificateVSPaymentExchangeIncomeAmount);
-                }//конец если платежи привысили комиссию
-            }
-        } else {// если платеж был 1
-            BigDecimal incomingPaymentRate = incomingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
-            completionCertificateVSPaymentExchangeIncomeAmount = count(actDateExchangeRateAmount, incomingPaymentRate
-                    , payableAmount);
-        }
+        if (isPayableAmountFullyPaid && isReceivableAmountFullyPaid) { //считаем, только если выплатили до конца
 
-
-        if (outgoingPayments.size() > 1 && isPayableAmountFullyPaid) {
-            for (Payment payment : outgoingPayments) {//пойдем по всем платежам
-                BigDecimal outgoingPaymentAmount = payment.getPaymentAmount();
-                accumulatedPayments = accumulatedPayments.add(outgoingPaymentAmount);//складываем всеплатежи тут
-                if (accumulatedPayments.compareTo(commissionAmount) > 0) {// если платежи привысили комиссию
-
+            if (incomingPayments.size() > 1 && outgoingPayments.size() == 1) {
+                BigDecimal outgoingPaymentRate = outgoingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
+                for (Payment payment : incomingPayments) {//пойдем по всем платежам
+                    BigDecimal incomingPaymentAmount = payment.getPaymentAmount();
+                    accumulatedIncomingPayments = accumulatedIncomingPayments.add(incomingPaymentAmount);//складываем всеплатежи тут
+                    if (accumulatedIncomingPayments.compareTo(commissionAmount) > 0) {// если платежи привысили комиссию
+                        if (!isCommissionSubtracted) {// если комиссия не вычтена из платежей
+                            incomingPaymentAmount = incomingPaymentAmount.subtract(commissionAmount);
+                            isCommissionSubtracted = true;
+                        }//коммиссия вычтена
+                        BigDecimal incomingPaymentRate = payment.getExchangeRate().getRate();
+                        receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRate, outgoingPaymentRate
+                                , incomingPaymentAmount));
+                    }
+                }
+            } else if (incomingPayments.size() == 1 && outgoingPayments.size() == 1) {
+                BigDecimal incomingPaymentRate = incomingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
+                BigDecimal outgoingPaymentRate = outgoingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
+                receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRate
+                        , outgoingPaymentRate, payableAmount));
+            } else if (incomingPayments.size() == 1 && outgoingPayments.size() > 1) {
+                BigDecimal incomingPaymentRate = incomingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
+                for (Payment payment : outgoingPayments) {//пойдем по всем платежам
+                    BigDecimal outgoingPaymentAmount = payment.getPaymentAmount();
                     BigDecimal outgoingPaymentRate = payment.getExchangeRate().getRate();
-                    receivedVSPaidExchangeIncomeAmount = count(incomingPaymentRate, outgoingPaymentRate,
-                            , outgoingPaymentAmount);
-                    receivedVSPaidExchangeIncomeAmount = completionCertificateVSPaymentExchangeIncomeAmount
-                            .add(completionCertificateVSPaymentExchangeIncomeAmount);
+                    receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add
+                            (count(incomingPaymentRate, outgoingPaymentRate, outgoingPaymentAmount));
+                }
+            } else if (incomingPayments.size() > 1 && outgoingPayments.size() > 1) {
+                Payment incomingPayment = null;
+                Payment outgoingPayment = null;
+
+                Map<BigDecimal, BigDecimal> remainderMap = new LinkedHashMap<>();
+                Iterator<Payment> incomingIterator = incomingPayments.iterator();
+                Iterator<Payment> outgoingIterator = outgoingPayments.iterator();//пойдем по всем платежам
+
+                while (incomingIterator.hasNext() || outgoingIterator.hasNext()) {
+                    BigDecimal incomingPaymentAmount;
+                    BigDecimal outgoingPaymentAmount = BigDecimal.ZERO;
+
+                    BigDecimal outgoingPaymentRate = outgoingPayments.get(outgoingPayments.size() - 1).getExchangeRate().getRate();// курс последнего платежа
+                    if (outgoingIterator.hasNext()) {
+                        outgoingPayment = outgoingIterator.next();
+                        outgoingPaymentAmount = outgoingPayment.getPaymentAmount();
+                        outgoingPaymentRate = outgoingPayment.getExchangeRate().getRate();
+                    }
+                    if (incomingIterator.hasNext()) {
+                        incomingPayment = incomingIterator.next();
+                        incomingPaymentAmount = incomingPayment.getPaymentAmount();
+                        accumulatedIncomingPayments = accumulatedIncomingPayments.add(incomingPaymentAmount);//складываем всеплатежи тут
+                        BigDecimal incomingPaymentRate = incomingPayment.getExchangeRate().getRate();
+
+                        if (accumulatedIncomingPayments.compareTo(commissionAmount) > 0) {// если платежи привысили комиссию
+                            if (!isCommissionSubtracted) {// если комиссия не вычтена из платежей
+                                incomingPaymentAmount = incomingPaymentAmount.subtract(commissionAmount);
+                                isCommissionSubtracted = true;
+                            }
+                            if (!(remainderMap.isEmpty())) {
+                                Map.Entry<BigDecimal, BigDecimal> entry = remainderMap.entrySet().iterator().next();
+
+                                BigDecimal incomingPaymentRemainderAmount = entry.getKey();
+                                BigDecimal incomingPaymentRateValue = entry.getValue();
+                                receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRateValue, outgoingPaymentRate
+                                        , incomingPaymentRemainderAmount));
+                                incomingPaymentAmount = incomingPaymentAmount.subtract(incomingPaymentRemainderAmount);
+                                remainderMap.clear();
+                            }
+                            if (incomingPaymentAmount.compareTo(outgoingPaymentAmount) > 0) {
+                                BigDecimal remainderIncomingPayment = incomingPaymentAmount.subtract(outgoingPaymentAmount);
+                                remainderMap.put(remainderIncomingPayment, incomingPaymentRate);
+                            }
+                        }
+                        receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRate, outgoingPaymentRate
+                                , outgoingPaymentAmount));
+                    }
                 }//конец если платежи привысили комиссию
             }
-        } else {// если платеж был 1
-            BigDecimal incomingPaymentRate = incomingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
-            completionCertificateVSPaymentExchangeIncomeAmount = count(actDateExchangeRateAmount, incomingPaymentRate
-                    , payableAmount);
         }
-
-
-
-
-
-
-
-
-            Payment incomingPayment = null;
-            Payment outgoingPayment = null;
-            Iterator<Payment> incomingIterator = incomingPayments.iterator();
-            Iterator<Payment> outgoingIterator = outgoingPayments.iterator();
-            while (incomingIterator.hasNext() || outgoingIterator.hasNext()) {
-                if (incomingIterator.hasNext()) {
-                    incomingPayment = incomingIterator.next();
-                }
-                if (outgoingIterator.hasNext()) {
-                    outgoingPayment = outgoingIterator.next();
-                }
-
-                BigDecimal outgoingPaymentAmount = outgoingPayment.getPaymentAmount();
-                outgoingAccumulatedPayments = outgoingAccumulatedPayments.add(outgoingPaymentAmount);//складываем всеплатежи тут
-                BigDecimal outgoingPaymentRate = outgoingPayment.getExchangeRate().getRate();
-                BigDecimal incomingPaymentAmount = incomingPayment.getPaymentAmount();
-                incomingAccumulatedPayments = incomingAccumulatedPayments.add(incomingPaymentAmount);//складываем всеплатежи тут
-                BigDecimal incomingPaymentRate = incomingPayment.getExchangeRate().getRate();
-
-                receivedVSPaidExchangeIncomeAmount = count(incomingPaymentRate, outgoingPaymentRate
-                        , incomingPaymentAmount);
-                receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(receivedVSPaidExchangeIncomeAmount);
-            }//конец
-        } else {// если платеж был 1
-            BigDecimal incomingPaymentRate = incomingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
-            BigDecimal outgoingPaymentRate = outgoingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
-            receivedVSPaidExchangeIncomeAmount = count(incomingPaymentRate, outgoingPaymentRate
-                    , payableAmount);
-            receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(receivedVSPaidExchangeIncomeAmount);
-        }
-
         receivedVSPaidExchangeIncome.setIncome(receivedVSPaidExchangeIncomeAmount);
-        if (isPositiveOrZero(receivedVSPaidExchangeIncomeAmount)) {
+        if (
+
+                isPositiveOrZero(receivedVSPaidExchangeIncomeAmount)) {
             receivedVSPaidExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_60_11_90_7);
         } else {
             receivedVSPaidExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_90_4_60_11);
         }
+
         return receivedVSPaidExchangeIncome;
     }
 
-    private AccountExchangeIncome buildAccountExchangeIncome(Transaction transaction) {
+    private AccountExchangeIncome buildAccountExchangeIncome() {
 
-    }
-
-    private boolean isPositiveOrZero(BigDecimal number) {
-        return number.compareTo(BigDecimal.ZERO) >= 0;
+        return null;
     }
 }
+
+
+
+
 
 
 
