@@ -209,8 +209,8 @@ public class ExchangeIncomeService {
                             (count(incomingPaymentRate, outgoingPaymentRate, outgoingPaymentAmount));
                 }
             } else if (incomingPayments.size() > 1 && outgoingPayments.size() > 1) {
-                Payment incomingPayment = null;
-                Payment outgoingPayment = null;
+                Payment incomingPayment;
+                Payment outgoingPayment;
 
                 Map<BigDecimal, BigDecimal> remainderMap = new LinkedHashMap<>();
                 Iterator<Payment> incomingIterator = incomingPayments.iterator();
@@ -244,16 +244,18 @@ public class ExchangeIncomeService {
                                 BigDecimal incomingPaymentRateValue = entry.getValue();
                                 receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRateValue, outgoingPaymentRate
                                         , incomingPaymentRemainderAmount));
-                                incomingPaymentAmount = incomingPaymentAmount.subtract(incomingPaymentRemainderAmount);
                                 remainderMap.clear();
                             }
                             if (incomingPaymentAmount.compareTo(outgoingPaymentAmount) > 0) {
                                 BigDecimal remainderIncomingPayment = incomingPaymentAmount.subtract(outgoingPaymentAmount);
                                 remainderMap.put(remainderIncomingPayment, incomingPaymentRate);
+                                receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRate, outgoingPaymentRate
+                                        , outgoingPaymentAmount));
+                            } else if (incomingPaymentAmount.compareTo(outgoingPaymentAmount) < 0) {
+                                receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRate, outgoingPaymentRate
+                                        , incomingPaymentAmount));
                             }
                         }
-                        receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRate, outgoingPaymentRate
-                                , outgoingPaymentAmount));
                     }
                 }//конец если платежи привысили комиссию
             }
