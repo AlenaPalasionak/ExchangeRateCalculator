@@ -17,9 +17,9 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
 
     private final ExchangeRateTableService exchangeRateService;
 
-    public ForeignCurrencyAccountantTableService(ExchangeRateTableService exchangeRateService) {
+    public ForeignCurrencyAccountantTableService() {
         super(new AccountantTableImpl());
-        this.exchangeRateService = exchangeRateService;
+        exchangeRateService = new ExchangeRateTableService();
     }
 
     LinkedList<Payment> buildIncomingPayment(List<Object> rowObject) {

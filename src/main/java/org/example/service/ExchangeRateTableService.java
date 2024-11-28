@@ -2,14 +2,17 @@ package org.example.service;
 
 import org.example.model.ExchangeRate;
 import org.example.repository.ExchangeRateTable;
+import org.example.repository.ExchangeRateTableImpl;
 
 import java.math.BigDecimal;
 import java.util.Map;
 
 public class ExchangeRateTableService {
     private final Map<String, BigDecimal> exchangeRateTable;
+    ExchangeRateTable exchangeRateRepository;
 
-    public ExchangeRateTableService(ExchangeRateTable exchangeRateRepository) {
+    public ExchangeRateTableService() {
+         exchangeRateRepository = new ExchangeRateTableImpl();
         this.exchangeRateTable = exchangeRateRepository.getExchangeRateTableCache();
     }
     public ExchangeRate getExchangeRate(String paymentDate) {

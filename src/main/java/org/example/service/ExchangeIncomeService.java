@@ -21,11 +21,11 @@ public class ExchangeIncomeService {
     private final ExchangeRateTableService exchangeRateService;
     private final LinkedList<List<Object>> transactionTableInForeignCurrency;
 
-    public ExchangeIncomeService(ForeignCurrencyAccountantTableService foreignCurrencyAccountantTableService, ExchangeRateTableService exchangeRateService) {
-        this.foreignCurrencyAccountantTableService = foreignCurrencyAccountantTableService;
+    public ExchangeIncomeService() {
+        this.foreignCurrencyAccountantTableService = new ForeignCurrencyAccountantTableService();
         this.transactionTableInForeignCurrency = foreignCurrencyAccountantTableService.getFilteredTableByCellContent
                 (INCOMING_PAYMENT_AMOUNT, RUS_RUB, DOLLAR, EURO);
-        this.exchangeRateService = exchangeRateService;
+        this.exchangeRateService = new ExchangeRateTableService();
     }
 
     public LinkedList<Transaction> getTransactions() {
@@ -60,7 +60,8 @@ public class ExchangeIncomeService {
 
         CommissionExchangeIncome commissionExchangeIncome = buildCommissionExchangeIncome(incomingPayments
                 , commissionAmount, actDateExchangeRateAmount, receivableAmount);
-        ReceivedVSPaidExchangeIncome receivedPaidExchangeIncome = buildReceivedVSPaidExchangeIncome();
+        ReceivedVSPaidExchangeIncome receivedPaidExchangeIncome = buildReceivedVSPaidExchangeIncome(incomingPayments
+                , outgoingPayments, receivableAmount, payableAmount, commissionAmount);
         AccountExchangeIncome accountExchangeIncome = buildAccountExchangeIncome();
 
         return new Transaction(receivableAmount, payableAmount, incomingPayments, outgoingPayments, accountantBalance
