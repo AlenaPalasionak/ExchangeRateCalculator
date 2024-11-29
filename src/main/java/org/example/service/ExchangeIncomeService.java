@@ -11,15 +11,19 @@ import org.example.model.non_operating_income.ReceivedVSPaidExchangeIncome;
 import org.example.util.StringHelper;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 import static org.example.constants.AccountantBookConstants.*;
 import static org.example.constants.CurrencyConstants.*;
+import static org.example.constants.JournalEntryConstants.*;
 
 public class ExchangeIncomeService {
     ForeignCurrencyAccountantTableService foreignCurrencyAccountantTableService;
     private final ExchangeRateTableService exchangeRateService;
     private final LinkedList<List<Object>> transactionTableInForeignCurrency;
+
+    AccountExchangeIncome accountExchangeIncome = new AccountExchangeIncome();
 
     public ExchangeIncomeService() {
         this.foreignCurrencyAccountantTableService = new ForeignCurrencyAccountantTableService();
@@ -33,8 +37,8 @@ public class ExchangeIncomeService {
 
         for (List<Object> rowInForeignCurrency : this.transactionTableInForeignCurrency) {
             Transaction transaction = createTransaction(rowInForeignCurrency);
-            if (transaction.getActPaymentExchangeIncome() != null && transaction.getCommissionExchangeIncome() != null
-                    && transaction.getReceivedPaidExchangeIncome() != null && transaction.getAccountExchangeIncome() != null) {
+            if (transaction.getCompletionCertificateVSPaymentExchangeIncome() != null && transaction.getCommissionExchangeIncome() != null
+                    && transaction.getReceivedVSPaidExchangeIncome() != null && transaction.getAccountExchangeIncome() != null) {
                 transactionsInForeignCurrency.add(transaction);
             }
         }
@@ -62,7 +66,6 @@ public class ExchangeIncomeService {
                 , commissionAmount, actDateExchangeRateAmount, receivableAmount);
         ReceivedVSPaidExchangeIncome receivedPaidExchangeIncome = buildReceivedVSPaidExchangeIncome(incomingPayments
                 , outgoingPayments, receivableAmount, payableAmount, commissionAmount);
-        AccountExchangeIncome accountExchangeIncome = buildAccountExchangeIncome();
 
         return new Transaction(receivableAmount, payableAmount, incomingPayments, outgoingPayments, accountantBalance
                 , actDate, commissionAmount, actNumber, actDateExchangeRate, actPaymentExchangeIncome
@@ -70,7 +73,8 @@ public class ExchangeIncomeService {
     }
 
     private BigDecimal count(BigDecimal rate1, BigDecimal rate2, BigDecimal amount) {
-        return (rate1.subtract(rate2)).multiply(amount);
+        BigDecimal amountDividedBy100 = amount.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
+        return ((rate1.subtract(rate2)).multiply(amountDividedBy100)).setScale(2, RoundingMode.HALF_UP);
     }
 
     private boolean isAmountFullyPaid(BigDecimal amount, List<Payment> payments) {
@@ -276,16 +280,20 @@ public class ExchangeIncomeService {
                 receivedVSPaidExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_90_4_60_11);
             }
         }
+        buildAccountExchangeIncome(receivedVSPaidExchangeIncomeAmount);
 
         return receivedVSPaidExchangeIncome;
     }
 
-    private boolean isPositiveOrZero(BigDecimal number) {
-        return number.compareTo(BigDecimal.ZERO) >= 0;
+    private AccountExchangeIncome buildAccountExchangeIncome(BigDecimal receivedVSPaidExchangeIncomeAmount) {
+        if (receivedVSPaidExchangeIncomeAmount.compareTo(BigDecimal.ZERO) > 0) {
+            accountExchangeIncome.setJournalEntry(ENTRY_52_1_60_11);
+        } else accountExchangeIncome.setJournalEntry(ENTRY_60_11_52_1);
+        return accountExchangeIncome;
     }
 
-    private AccountExchangeIncome buildAccountExchangeIncome() {
-        return null;
+    private boolean isPositiveOrZero(BigDecimal number) {
+        return number.compareTo(BigDecimal.ZERO) >= 0;
     }
 }
 

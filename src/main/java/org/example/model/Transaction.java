@@ -7,6 +7,7 @@ import org.example.model.non_operating_income.AbstractExchangeIncome;
 
 import java.math.BigDecimal;
 import java.util.LinkedList;
+
 @Getter
 @EqualsAndHashCode
 @AllArgsConstructor
@@ -22,8 +23,8 @@ public class Transaction {
     private String actNumber;
     private ExchangeRate actDateExchangeRate;
 
-    private AbstractExchangeIncome actPaymentExchangeIncome;
+    private AbstractExchangeIncome completionCertificateVSPaymentExchangeIncome;
     private AbstractExchangeIncome commissionExchangeIncome;
+    private AbstractExchangeIncome receivedVSPaidExchangeIncome;
     private AbstractExchangeIncome accountExchangeIncome;
-    private AbstractExchangeIncome receivedPaidExchangeIncome;
 }
