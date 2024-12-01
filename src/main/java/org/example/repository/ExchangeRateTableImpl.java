@@ -36,8 +36,8 @@ public class ExchangeRateTableImpl implements ExchangeRateTable {
                 Row row = sheet.getRow(rowIndex);
 
                 if (row != null) {
-                    Cell cellA = row.getCell(ExcelConstants.A_ROW);
-                    Cell cellAW = row.getCell(ExcelConstants.AW_ROW);
+                    Cell cellA = row.getCell(ExcelConstants.DATE_ROW);//date
+                    Cell cellAW = row.getCell(ExcelConstants.RATE_ROW);//rate
 
                     if (cellA != null && cellAW != null) {
                         if (cellA.getCellType() == CellType.BLANK && cellAW.getCellType() == CellType.BLANK) {

@@ -42,11 +42,11 @@ class ExchangeIncomeServiceTest {
 
         CompletionCertificateVSPaymentExchangeIncome completionCertificateVSPaymentExchangeIncome
                 = new CompletionCertificateVSPaymentExchangeIncome();
-        completionCertificateVSPaymentExchangeIncome.setIncome(new BigDecimal("25.33"));
+        completionCertificateVSPaymentExchangeIncome.setIncome(new BigDecimal("13.67"));
         completionCertificateVSPaymentExchangeIncome.setJournalEntry(ENTRY_62_11_60_11);
 
         CommissionExchangeIncome commissionExchangeIncome = new CommissionExchangeIncome();
-        commissionExchangeIncome.setIncome(new BigDecimal("1.89"));
+        commissionExchangeIncome.setIncome(new BigDecimal("1.02"));
         commissionExchangeIncome.setJournalEntry(ENTRY_62_11_90_7);
 
         ReceivedVSPaidExchangeIncome receivedPaidExchangeIncome = new ReceivedVSPaidExchangeIncome();
@@ -63,7 +63,7 @@ class ExchangeIncomeServiceTest {
 
     @Test
     void getTransactions() {
-        LinkedList<Transaction> transactions = new ExchangeIncomeService().getTransactions();
+        LinkedList<Transaction> transactions = new RusRubExchangeIncomeService().getTransactions();
 
         Transaction actualTransaction = transactions.get(0);
 
@@ -82,8 +82,23 @@ class ExchangeIncomeServiceTest {
                 , actualTransaction.getActNumber());
 
         assertEquals(expectedTransaction.getCommission(), actualTransaction.getCommission());
-
         assertEquals(expectedTransaction.getActDateExchangeRate(), actualTransaction.getActDateExchangeRate());
+
+        assertEquals(expectedTransaction.getCompletionCertificateVSPaymentExchangeIncome()
+                , actualTransaction.getCompletionCertificateVSPaymentExchangeIncome());
+
+        assertEquals(expectedTransaction.getCommissionExchangeIncome()
+                , actualTransaction.getCommissionExchangeIncome());
+
+        assertEquals(expectedTransaction.getReceivedVSPaidExchangeIncome()
+                , actualTransaction.getReceivedVSPaidExchangeIncome());
+
+        assertEquals(expectedTransaction.getAccountExchangeIncome()
+                , actualTransaction.getAccountExchangeIncome());
+
+
         assertEquals(expectedTransaction, actualTransaction);
+
+
     }
 }
