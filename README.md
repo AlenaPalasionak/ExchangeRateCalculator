@@ -1,4 +1,5 @@
 # Gain/Loss Calculator
+### The project is not complete and is still being developed...
 
 ## Description
 The Exchange Gain/Loss Calculator is an application designed for automated currency gain/loss calculations, tailored to the accounting needs of 
