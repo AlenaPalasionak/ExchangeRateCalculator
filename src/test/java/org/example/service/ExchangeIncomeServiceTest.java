@@ -36,25 +36,25 @@ class ExchangeIncomeServiceTest {
         outgoingPayments.add(ougoingPayment);
         BigDecimal actDateExchangeRateAmount = new BigDecimal("3.5741");
         ExchangeRate actDateExchangeRate = new ExchangeRate("21.01.2024", actDateExchangeRateAmount);
-        BigDecimal receivableAmount = new BigDecimal("67000");
-        BigDecimal payableAmount = new BigDecimal("72000");
-        BigDecimal commissionAmount = new BigDecimal("5000");
+        BigDecimal receivableAmount = new BigDecimal("72000");
+        BigDecimal payableAmount = new BigDecimal("67000");
 
         CompletionCertificateVSPaymentExchangeIncome completionCertificateVSPaymentExchangeIncome
                 = new CompletionCertificateVSPaymentExchangeIncome();
-        completionCertificateVSPaymentExchangeIncome.setIncome(new BigDecimal("13.67"));
+        completionCertificateVSPaymentExchangeIncome.setIncomeAmount(new BigDecimal("13.67"));
         completionCertificateVSPaymentExchangeIncome.setJournalEntry(ENTRY_62_11_60_11);
 
         CommissionExchangeIncome commissionExchangeIncome = new CommissionExchangeIncome();
-        commissionExchangeIncome.setIncome(new BigDecimal("1.02"));
+        commissionExchangeIncome.setIncomeAmount(new BigDecimal("1.02"));
         commissionExchangeIncome.setJournalEntry(ENTRY_62_11_90_7);
 
         ReceivedVSPaidExchangeIncome receivedPaidExchangeIncome = new ReceivedVSPaidExchangeIncome();
-        receivedPaidExchangeIncome.setIncome(new BigDecimal("11.66"));
+        receivedPaidExchangeIncome.setIncomeAmount(new BigDecimal("11.66"));
         receivedPaidExchangeIncome.setJournalEntry(ENTRY_60_11_90_7);
 
         AccountExchangeIncome accountExchangeIncome = new AccountExchangeIncome();
         accountExchangeIncome.setJournalEntry(ENTRY_52_1_60_11);
+
         expectedTransaction = new Transaction(receivableAmount, payableAmount, incomingPayments, outgoingPayments
                 , false, "21.01.2024", new BigDecimal("5000")
                 , "2", actDateExchangeRate, completionCertificateVSPaymentExchangeIncome
@@ -93,12 +93,21 @@ class ExchangeIncomeServiceTest {
         assertEquals(expectedTransaction.getReceivedVSPaidExchangeIncome()
                 , actualTransaction.getReceivedVSPaidExchangeIncome());
 
-        assertEquals(expectedTransaction.getAccountExchangeIncome()
-                , actualTransaction.getAccountExchangeIncome());
+        assertEquals(expectedTransaction.getAccountExchangeIncome().getIncomeAmount()
+                , actualTransaction.getAccountExchangeIncome().getIncomeAmount());
+
+        assertEquals(expectedTransaction.getAccountExchangeIncome().getJournalEntry()
+                , actualTransaction.getAccountExchangeIncome().getJournalEntry());
+
+
+
+        assertEquals(expectedTransaction.getReceivableAmount()
+                , actualTransaction.getReceivableAmount());
+
+        assertEquals(expectedTransaction.getPayableAmount()
+                , actualTransaction.getPayableAmount());
 
 
         assertEquals(expectedTransaction, actualTransaction);
-
-
     }
 }

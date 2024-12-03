@@ -54,9 +54,8 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
                 paymentAmount = new BigDecimal(dateAndAmount[paymentAmountIndex]
                         .replaceAll("[^0-9]", ""));
                 paymentDate = StringHelper.retrieveDateFromString(dateAndAmount[paymentDateIndex]);
-//Log
+          dateAndAmountMap.put(paymentDate, paymentAmount);
             }
-            dateAndAmountMap.put(paymentDate, paymentAmount);
         } else {
             paymentAmount = new BigDecimal(String.valueOf(StringHelper.retrieveNumberFromString(amount)));
             paymentDate = StringHelper.retrieveDateFromString(date);
