@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.List;
 
 public class AccountantTableImpl implements AccountantTable {
-    private List<List<Object>> accountantBookTableCache = null;
+    private static List<List<Object>> accountantBookTableCache = null;
     public static final String ACCOUNTANT_BOOK_SPREADSHEET_ID_KEY = "accountant_book_spreadsheetId";
     public static final String ACCOUNTANT_BOOK_SPREADSHEET_ID = Config.getProperties().getProperty(ACCOUNTANT_BOOK_SPREADSHEET_ID_KEY);
 
@@ -26,7 +26,7 @@ public class AccountantTableImpl implements AccountantTable {
         accountantBookTableCache = loadGoogleSheetTable(range);
     }
 
-    private List<List<Object>> loadGoogleSheetTable(String range) {
+    private static List<List<Object>> loadGoogleSheetTable(String range) {
         List<List<Object>> accountantBookTable;
         final Sheets service;
         try {

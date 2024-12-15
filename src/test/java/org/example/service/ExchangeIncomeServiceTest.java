@@ -11,7 +11,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.example.constants.JournalEntryConstants.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -21,8 +22,8 @@ class ExchangeIncomeServiceTest {
 
     @BeforeEach
     public void createTransaction() {
-        LinkedList<Payment> incomingPayments = new LinkedList<>();
-        LinkedList<Payment> outgoingPayments = new LinkedList<>();
+        List<Payment> incomingPayments = new ArrayList<>();
+        List<Payment> outgoingPayments = new ArrayList<>();
 
         Payment incomingPayment = new Payment(new BigDecimal("72000")
                 , "01.02.2024"
@@ -63,7 +64,7 @@ class ExchangeIncomeServiceTest {
 
     @Test
     void getTransactions() {
-        LinkedList<Transaction> transactions = new RusRubExchangeIncomeService().getTransactions();
+        List<Transaction> transactions = new RusRubExchangeIncomeService().getTransactions();
 
         Transaction actualTransaction = transactions.get(0);
 
@@ -99,14 +100,11 @@ class ExchangeIncomeServiceTest {
         assertEquals(expectedTransaction.getAccountExchangeIncome().getJournalEntry()
                 , actualTransaction.getAccountExchangeIncome().getJournalEntry());
 
-
-
         assertEquals(expectedTransaction.getReceivableAmount()
                 , actualTransaction.getReceivableAmount());
 
         assertEquals(expectedTransaction.getPayableAmount()
                 , actualTransaction.getPayableAmount());
-
 
         assertEquals(expectedTransaction, actualTransaction);
     }

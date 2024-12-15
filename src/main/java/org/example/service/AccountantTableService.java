@@ -2,7 +2,7 @@ package org.example.service;
 
 import org.example.repository.AccountantTable;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -12,20 +12,20 @@ import static org.example.constants.AccountantBookConstants.SHEET_1_B_M;
 public class AccountantTableService {
 
     private final List<List<Object>> sheetDataTable;
-    private LinkedList<List<Object>> filteredTableByCellContentCache = null;
+    private static List<List<Object>> filteredTableByCellContentCache = null;
 
     public AccountantTableService(AccountantTable accountantBookRepository) {
         this.sheetDataTable = accountantBookRepository.getSheetDataTableCache(SHEET_1_B_M);
     }
 
-    public LinkedList<List<Object>> getFilteredTableByCellContent(List<List<Object>> filterConditions) {
+    public List<List<Object>> getFilteredTableByCellContent(List<List<Object>> filterConditions) {
         if (filteredTableByCellContentCache == null) {
             filteredTableByCellContentCache = filterTableByCellContent(filterConditions);
         }
         return filteredTableByCellContentCache;
     }
 
-    private LinkedList<List<Object>> filterTableByCellContent(List<List<Object>> filterConditions) {
+    private List<List<Object>> filterTableByCellContent(List<List<Object>> filterConditions) {
         filteredTableByCellContentCache = sheetDataTable.stream()
                 .filter(row -> {
                     // Для каждой строки проверяем все условия фильтрации
@@ -42,7 +42,7 @@ public class AccountantTableService {
                         return Pattern.compile(filterValue).matcher(cellValue).find();
                     });
                 })
-                .collect(Collectors.toCollection(LinkedList::new)); // Сохраняем результат в LinkedList
+                .collect(Collectors.toCollection(ArrayList::new)); // Сохраняем результат в List
         return filteredTableByCellContentCache;
     }
 }

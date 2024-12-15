@@ -18,7 +18,7 @@ import java.util.Map;
 import static org.example.constants.AccountantBookConstants.DATE_FORMAT;
 
 public class ExchangeRateTableImpl implements ExchangeRateTable {
-    private Map<String, BigDecimal> exchangeRateTableCache = null;
+    private static Map<String, BigDecimal> exchangeRateTableCache = null;
 
     public Map<String, BigDecimal> getExchangeRateTableCache() {
         if (exchangeRateTableCache == null)
@@ -26,7 +26,7 @@ public class ExchangeRateTableImpl implements ExchangeRateTable {
         return exchangeRateTableCache;
     }
 
-    private Map<String, BigDecimal> loadExchangeRateTable() {
+    private static Map<String, BigDecimal> loadExchangeRateTable() {
         Map<String, BigDecimal> exchangeRateTable = new LinkedHashMap<>();
         try {
             Sheet sheet = ExcelFileConnector.connectToSheets();

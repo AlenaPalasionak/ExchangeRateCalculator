@@ -6,7 +6,7 @@ import lombok.Getter;
 import org.example.model.non_operating_income.AbstractExchangeIncome;
 
 import java.math.BigDecimal;
-import java.util.LinkedList;
+import java.util.List;
 
 @Getter
 @EqualsAndHashCode
@@ -15,8 +15,8 @@ public class Transaction {
 
     private BigDecimal receivableAmount;
     private BigDecimal payableAmount;
-    private LinkedList<Payment> incomingPaymentList;
-    private LinkedList<Payment> outgoingPaymentList;
+    private List<Payment> incomingPaymentList;
+    private List<Payment> outgoingPaymentList;
     private boolean accountBalance;
     private String actDate;
     private BigDecimal commission;

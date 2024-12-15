@@ -23,11 +23,11 @@ import static org.example.constants.JournalEntryConstants.ENTRY_60_11_52_1;
 public class RusRubExchangeIncomeService {
     private final ForeignCurrencyAccountantTableService foreignCurrencyAccountantTableService;
     private final ExchangeRateTableService exchangeRateService;
-    private final LinkedList<List<Object>> transactionTableInForeignCurrency;
+    private final List<List<Object>> transactionTableInForeignCurrency;
 
     public RusRubExchangeIncomeService() {
         this.foreignCurrencyAccountantTableService = new ForeignCurrencyAccountantTableService();
-        List<List<Object>> filterConditions = new LinkedList<>();
+        List<List<Object>> filterConditions = new ArrayList<>();
         filterConditions.add(Arrays.asList(INCOMING_PAYMENT_AMOUNT, RUS_RUB));
         filterConditions.add(Arrays.asList(INCOMING_PAYMENT_DATE, "\\d+"));
         filterConditions.add(Arrays.asList(OUTGOING_PAYMENT_DATE, "\\d+"));
@@ -37,8 +37,8 @@ public class RusRubExchangeIncomeService {
         this.exchangeRateService = new ExchangeRateTableService();
     }
 
-    public LinkedList<Transaction> getTransactions() {
-        LinkedList<Transaction> transactionsInForeignCurrency = new LinkedList<>();
+    public List<Transaction> getTransactions() {
+        List<Transaction> transactionsInForeignCurrency = new ArrayList<>();
 
         for (List<Object> rowInForeignCurrency : this.transactionTableInForeignCurrency) {
             Transaction transaction = createTransaction(rowInForeignCurrency);
@@ -55,8 +55,8 @@ public class RusRubExchangeIncomeService {
         BigDecimal receivableAmount = StringHelper.retrieveNumberFromString(String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT)));
         BigDecimal payableAmount = StringHelper.retrieveNumberFromString(String.valueOf(rowObject.get(OUTGOING_PAYMENT_AMOUNT)));
 
-        LinkedList<Payment> incomingPayments = foreignCurrencyAccountantTableService.buildIncomingPayment(rowObject);
-        LinkedList<Payment> outgoingPayments = foreignCurrencyAccountantTableService.buildOutgoingPayment(rowObject);
+        List<Payment> incomingPayments = foreignCurrencyAccountantTableService.buildIncomingPayment(rowObject);
+        List<Payment> outgoingPayments = foreignCurrencyAccountantTableService.buildOutgoingPayment(rowObject);
         boolean accountantBalance = foreignCurrencyAccountantTableService.isBalance(rowObject);
         String actDate = StringHelper.retrieveDateFromString(String.valueOf(rowObject.get(ACT_DATE)));
         BigDecimal commissionAmount = foreignCurrencyAccountantTableService.countCommission(rowObject);
@@ -72,7 +72,7 @@ public class RusRubExchangeIncomeService {
 
         ReceivedVSPaidExchangeIncome receivedPaidExchangeIncome = buildReceivedVSPaidExchangeIncome(incomingPayments
                 , outgoingPayments, receivableAmount, payableAmount, commissionAmount);
-  //      Log.info("* * *RusRubExchangeIncomeService * * * receivedPaidExchangeIncomeAmount: " + receivedPaidExchangeIncome.getIncomeAmount());
+        //      Log.info("* * *RusRubExchangeIncomeService * * * receivedPaidExchangeIncomeAmount: " + receivedPaidExchangeIncome.getIncomeAmount());
 
         AccountExchangeIncome accountExchangeIncome = new AccountExchangeIncome();
         accountExchangeIncome.setJournalEntry(buildAccountExchangeIncomeJournalEntry(receivedPaidExchangeIncome));
@@ -100,7 +100,7 @@ public class RusRubExchangeIncomeService {
         return paymentAmountsSum.equals(amount);
     }
 
-    private CompletionCertificateVSPaymentExchangeIncome completionCertificateVSPaymentExchangeIncome(LinkedList<Payment> incomingPayments
+    private CompletionCertificateVSPaymentExchangeIncome completionCertificateVSPaymentExchangeIncome(List<Payment> incomingPayments
             , BigDecimal commissionAmount, BigDecimal actDateExchangeRateAmount, BigDecimal payableAmount
             , BigDecimal receivableAmount) {
 
@@ -148,9 +148,8 @@ public class RusRubExchangeIncomeService {
         return completionCertificateVSPaymentExchangeIncome;
     }
 
-    private CommissionExchangeIncome buildCommissionExchangeIncome(LinkedList<Payment> incomingPayments
+    private CommissionExchangeIncome buildCommissionExchangeIncome(List<Payment> incomingPayments
             , BigDecimal commissionAmount, BigDecimal actDateExchangeRateAmount, BigDecimal receivableAmount) {
-        //(курс даты акта – курс даты опл. Нам)* сумма комиссии
         CommissionExchangeIncome commissionIncome = new CommissionExchangeIncome();
 
         boolean isReceivableAmountFullyPaid = isAmountFullyPaid(receivableAmount, incomingPayments);
@@ -190,8 +189,8 @@ public class RusRubExchangeIncomeService {
         return commissionIncome;
     }
 
-    private ReceivedVSPaidExchangeIncome buildReceivedVSPaidExchangeIncome(LinkedList<Payment> incomingPayments
-            , LinkedList<Payment> outgoingPayments, BigDecimal receivableAmount
+    private ReceivedVSPaidExchangeIncome buildReceivedVSPaidExchangeIncome(List<Payment> incomingPayments
+            , List<Payment> outgoingPayments, BigDecimal receivableAmount
             , BigDecimal payableAmount, BigDecimal commissionAmount) {
 
         ReceivedVSPaidExchangeIncome receivedVSPaidExchangeIncome = null;
@@ -310,7 +309,7 @@ public class RusRubExchangeIncomeService {
 
     private String buildAccountExchangeIncomeJournalEntry(ReceivedVSPaidExchangeIncome receivedPaidExchangeIncome) {
         if (receivedPaidExchangeIncome.getIncomeAmount().compareTo(BigDecimal.ZERO) > 0) {
-           return (ENTRY_52_1_60_11);
+            return (ENTRY_52_1_60_11);
         } else return ENTRY_60_11_52_1;
     }
 

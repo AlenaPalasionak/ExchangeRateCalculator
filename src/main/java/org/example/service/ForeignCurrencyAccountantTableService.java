@@ -6,8 +6,8 @@ import org.example.repository.AccountantTableImpl;
 import org.example.util.StringHelper;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -22,8 +22,8 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
         exchangeRateService = new ExchangeRateTableService();
     }
 
-    LinkedList<Payment> buildIncomingPayment(List<Object> rowObject) {
-        LinkedList<Payment> payments;
+    List<Payment> buildIncomingPayment(List<Object> rowObject) {
+        List<Payment> payments;
         String paymentDateCellString = String.valueOf(rowObject.get(INCOMING_PAYMENT_DATE));
         String paymentAmountCellString = String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT));
         payments = buildPayment(paymentDateCellString, paymentAmountCellString);
@@ -31,8 +31,8 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
         return payments;
     }
 
-    LinkedList<Payment> buildOutgoingPayment(List<Object> rowObject) {
-        LinkedList<Payment> payments;
+    List<Payment> buildOutgoingPayment(List<Object> rowObject) {
+        List<Payment> payments;
 
         String paymentDateCellString = String.valueOf(rowObject.get(OUTGOING_PAYMENT_DATE));
         String paymentAmountCellString = String.valueOf(rowObject.get(OUTGOING_PAYMENT_AMOUNT));
@@ -43,8 +43,8 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
 
     LinkedHashMap<String, BigDecimal> buildPaymentDateAndAmountMap(String date, String amount) {
         LinkedHashMap<String, BigDecimal> dateAndAmountMap = new LinkedHashMap<>();
-        BigDecimal paymentAmount = null;
-        String paymentDate = null;
+        BigDecimal paymentAmount;
+        String paymentDate;
         if (date.contains("_")) {
             String[] payments = date.split("_");
             for (String payment : payments) {
@@ -65,9 +65,9 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
         return dateAndAmountMap;
     }
 
-    LinkedList<Payment> buildPayment(String paymentDateCellString, String paymentAmountCellString) {
+    List<Payment> buildPayment(String paymentDateCellString, String paymentAmountCellString) {
         LinkedHashMap<String, BigDecimal> paymentDateAndAmountMap;
-        LinkedList<Payment> payments = new LinkedList<>();
+        List<Payment> payments = new ArrayList<>();
 
         paymentDateAndAmountMap = buildPaymentDateAndAmountMap(paymentDateCellString
                 , paymentAmountCellString);

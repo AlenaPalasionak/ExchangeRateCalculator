@@ -9,10 +9,9 @@ import java.util.Map;
 
 public class ExchangeRateTableService {
     private final Map<String, BigDecimal> exchangeRateTable;
-    ExchangeRateTable exchangeRateRepository;
 
     public ExchangeRateTableService() {
-         exchangeRateRepository = new ExchangeRateTableImpl();
+        ExchangeRateTable exchangeRateRepository = new ExchangeRateTableImpl();
         this.exchangeRateTable = exchangeRateRepository.getExchangeRateTableCache();
     }
     public ExchangeRate getExchangeRate(String paymentDate) {
