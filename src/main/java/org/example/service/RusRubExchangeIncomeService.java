@@ -11,6 +11,7 @@ import org.example.model.non_operating_income.CompletionCertificateVSPaymentExch
 import org.example.model.non_operating_income.ReceivedVSPaidExchangeIncome;
 import org.example.util.StringHelper;
 
+import javax.swing.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
@@ -203,9 +204,11 @@ public class RusRubExchangeIncomeService {
         BigDecimal accumulatedIncomingPayments = BigDecimal.ZERO;
         boolean isCommissionSubtracted = false;
 
-        if (isPayableAmountFullyPaid && isReceivableAmountFullyPaid) { //считаем, только если выплатили до конца
+        if(!isPayableAmountFullyPaid && !isReceivableAmountFullyPaid) {
+            JOptionPane.showMessageDialog(null, "Входящий или исходящий долг не полностью погашен" );
+        }
 
-            if (incomingPayments.size() > 1 && outgoingPayments.size() == 1) {
+        else if (incomingPayments.size() > 1 && outgoingPayments.size() == 1) {
                 BigDecimal outgoingPaymentRate = outgoingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
                 for (Payment payment : incomingPayments) {//пойдем по всем платежам
                     BigDecimal incomingPaymentAmount = payment.getPaymentAmount();
@@ -234,8 +237,8 @@ public class RusRubExchangeIncomeService {
                             (count(incomingPaymentRate, outgoingPaymentRate, outgoingPaymentAmount));
                 }
             }
-        }
-//            } else if (incomingPayments.size() > 1 && outgoingPayments.size() > 1) {
+
+//             else if (incomingPayments.size() > 1 && outgoingPayments.size() > 1) {
 //                Payment incomingPayment;
 //                Payment outgoingPayment;
 //                boolean isOutgoingPaymentSumFullyCounted;
