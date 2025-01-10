@@ -1,10 +1,10 @@
 package org.example.repository;
 
-import org.example.model.Transaction;
+import org.example.model.FreightJournalRecord;
 
 import java.util.List;
 
 public interface ExchangeIncomeTable {
 
-    public void writeData(List<Transaction> transactions);
+    public void writeData(List<FreightJournalRecord> sourceTableData);
 }

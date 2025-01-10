@@ -3,21 +3,21 @@ package org.example.service;
 import org.example.constants.JournalEntryConstants;
 import org.example.logger.Log;
 import org.example.model.ExchangeRate;
+import org.example.model.FreightJournalRecord;
 import org.example.model.Payment;
-import org.example.model.Transaction;
-import org.example.model.non_operating_income.AccountExchangeIncome;
-import org.example.model.non_operating_income.CommissionExchangeIncome;
-import org.example.model.non_operating_income.CompletionCertificateVSPaymentExchangeIncome;
-import org.example.model.non_operating_income.ReceivedVSPaidExchangeIncome;
+import org.example.model.PaymentTransactionEntry;
+import org.example.model.non_operating_income.*;
 import org.example.util.StringHelper;
 
 import javax.swing.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.example.constants.AccountantBookConstants.*;
-import static org.example.constants.CurrencyConstants.*;
+import static org.example.constants.CurrencyConstants.RUS_RUB;
 import static org.example.constants.JournalEntryConstants.ENTRY_52_1_60_11;
 import static org.example.constants.JournalEntryConstants.ENTRY_60_11_52_1;
 
@@ -38,21 +38,21 @@ public class RusRubExchangeIncomeService {
         this.exchangeRateService = new ExchangeRateTableService();
     }
 
-    public List<Transaction> getTransactions() {
-        List<Transaction> transactionsInForeignCurrency = new ArrayList<>();
+    public List<PaymentTransactionEntry> getPaymentTransactionEntry() {
+        List<FreightJournalRecord> transactionsInForeignCurrency = new ArrayList<>();
 
         for (List<Object> rowInForeignCurrency : this.transactionTableInForeignCurrency) {
-            Transaction transaction = createTransaction(rowInForeignCurrency);
-            if (transaction.getCompletionCertificateVSPaymentExchangeIncome() != null && transaction.getCommissionExchangeIncome() != null
-                    && transaction.getReceivedVSPaidExchangeIncome() != null && transaction.getAccountExchangeIncome() != null) {
-                transactionsInForeignCurrency.add(transaction);
+            FreightJournalRecord freightJournalRecord = createPaymentTransactionEntry(rowInForeignCurrency);
+            if (freightJournalRecord.getCompletionCertificateVSPaymentExchangeIncome() != null && freightJournalRecord.getCommissionExchangeIncome() != null
+                    && freightJournalRecord.getReceivedVSPaidExchangeIncome() != null && freightJournalRecord.getAccountExchangeIncome() != null) {
+                transactionsInForeignCurrency.add(freightJournalRecord);
             }
         }
 
         return transactionsInForeignCurrency;
     }
 
-    private Transaction createTransaction(List<Object> rowObject) {
+    private PaymentTransactionEntry createPaymentTransactionEntry(List<Object> rowObject) {
         BigDecimal receivableAmount = StringHelper.retrieveNumberFromString(String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT)));
         BigDecimal payableAmount = StringHelper.retrieveNumberFromString(String.valueOf(rowObject.get(OUTGOING_PAYMENT_AMOUNT)));
 
@@ -65,7 +65,7 @@ public class RusRubExchangeIncomeService {
         ExchangeRate actDateExchangeRate = exchangeRateService.getExchangeRate(actDate);
         BigDecimal actDateExchangeRateAmount = exchangeRateService.getExchangeRateAmount(actDate);
 
-        CompletionCertificateVSPaymentExchangeIncome actPaymentExchangeIncome = completionCertificateVSPaymentExchangeIncome
+        ActVSIncomingPaymentExchangeIncome actPaymentExchangeIncome = completionCertificateVSPaymentExchangeIncome
                 (incomingPayments, commissionAmount, actDateExchangeRateAmount, payableAmount, receivableAmount);
 
         CommissionExchangeIncome commissionExchangeIncome = buildCommissionExchangeIncome(incomingPayments
@@ -76,12 +76,11 @@ public class RusRubExchangeIncomeService {
         //      Log.info("* * *RusRubExchangeIncomeService * * * receivedPaidExchangeIncomeAmount: " + receivedPaidExchangeIncome.getIncomeAmount());
 
         AccountExchangeIncome accountExchangeIncome = new AccountExchangeIncome();
+
         accountExchangeIncome.setJournalEntry(buildAccountExchangeIncomeJournalEntry(receivedPaidExchangeIncome));
         Log.info("* * *RusRubExchangeIncomeService * * * accountExchangeIncome: " + accountExchangeIncome.getJournalEntry());
 
-        return new Transaction(receivableAmount, payableAmount, incomingPayments, outgoingPayments, accountantBalance
-                , actDate, commissionAmount, actNumber, actDateExchangeRate, actPaymentExchangeIncome
-                , commissionExchangeIncome, receivedPaidExchangeIncome, accountExchangeIncome);
+        return new PaymentTransactionEntry();
     }
 
     private BigDecimal count(BigDecimal rate1, BigDecimal rate2, BigDecimal amount) {
@@ -101,52 +100,42 @@ public class RusRubExchangeIncomeService {
         return paymentAmountsSum.equals(amount);
     }
 
-    private CompletionCertificateVSPaymentExchangeIncome completionCertificateVSPaymentExchangeIncome(List<Payment> incomingPayments
-            , BigDecimal commissionAmount, BigDecimal actDateExchangeRateAmount, BigDecimal payableAmount
-            , BigDecimal receivableAmount) {
+    /**
+     * new Calculation, general method
+     */
+    private ExchangeIncomeContainer buildExchangeIncomeContainer(List<Payment> incomingPayments
+            , List<Payment> outgoingPayments, BigDecimal receivableAmount
+            , BigDecimal payableAmount, BigDecimal commissionAmount
+            , BigDecimal actDateExchangeRate) {
 
-        CompletionCertificateVSPaymentExchangeIncome completionCertificateVSPaymentExchangeIncome
-                = new CompletionCertificateVSPaymentExchangeIncome();
+        ExchangeIncomeContainer exchangeIncomeContainer = new ExchangeIncomeContainer();
 
-        boolean isReceivableAmountFullyPaid = isAmountFullyPaid(receivableAmount, incomingPayments);
-        BigDecimal accumulatedPayments = BigDecimal.ZERO;
-        BigDecimal completionCertificateVSPaymentExchangeIncomeAmount = BigDecimal.ZERO;
+        List<AbstractExchangeIncome> commissionExchangeIncomeList = new ArrayList<>();
+        List<AbstractExchangeIncome> actVSIncomingPaymentExchangeIncome = new ArrayList<>();
+        List<AbstractExchangeIncome> receivedVSPaidExchangeIncome = new ArrayList<>();
+        List<AbstractExchangeIncome> accountExchangeIncome = new ArrayList<>();
+
         boolean isCommissionSubtracted = false;
+        boolean isPayableAmountFullyPaid = isAmountFullyPaid(payableAmount, outgoingPayments);
+        boolean isReceivableAmountFullyPaid = isAmountFullyPaid(receivableAmount, incomingPayments);
 
-        if (incomingPayments.size() > 1 && isReceivableAmountFullyPaid) {
-            Log.info("* * * Class RusRubExchangeIncomeService * * *");
-
-            for (Payment payment : incomingPayments) {//пойдем по всем платежам
-                BigDecimal incomingPaymentAmount = payment.getPaymentAmount();
-                accumulatedPayments = accumulatedPayments.add(incomingPaymentAmount);//складываем все платежи тут
-                if (accumulatedPayments.compareTo(commissionAmount) > 0) {// если платежи привысили комиссию
-                    if (!isCommissionSubtracted) {// если комиссия не вычтена из платежей
-                        incomingPaymentAmount = incomingPaymentAmount.subtract(commissionAmount);
-                        isCommissionSubtracted = true;
-                    }//коммиссия вычтена
-                    BigDecimal incomingPaymentRate = payment.getExchangeRate().getRate();
-                    completionCertificateVSPaymentExchangeIncomeAmount = completionCertificateVSPaymentExchangeIncomeAmount
-                            .add(count(actDateExchangeRateAmount, incomingPaymentRate, incomingPaymentAmount));
-                }//конец если платежи привысили комиссию
-            }
-        } else {// если платеж был 1
+        if (!isPayableAmountFullyPaid && !isReceivableAmountFullyPaid) {
+            JOptionPane.showMessageDialog(null, "Входящий или исходящий долг не полностью погашен");
+        } else if (incomingPayments.size() == 1 && outgoingPayments.size() == 1) {
             BigDecimal incomingPaymentRate = incomingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
-            Log.info("* * * Class RusRubExchangeIncomeService * * * ");
-            Log.info("PaymentDate " + incomingPayments.get(SINGLE_PAYMENT_INDEX).getPaymentDate() + " incomingPaymentRate " + incomingPaymentRate);
+            BigDecimal commissionExchangeIncomeAmount = count(actDateExchangeRate, incomingPaymentRate, commissionAmount);
+            CommissionExchangeIncome commissionIncome = new CommissionExchangeIncome();
 
-            completionCertificateVSPaymentExchangeIncomeAmount = completionCertificateVSPaymentExchangeIncomeAmount.add(count(actDateExchangeRateAmount, incomingPaymentRate
-                    , payableAmount));
-            Log.info("completionCertificateVSPaymentExchangeIncomeAmount  after add " + completionCertificateVSPaymentExchangeIncomeAmount);
+            commissionIncome.setIncomeAmount(commissionExchangeIncomeAmount);
+            if (isPositiveOrZero(commissionExchangeIncomeAmount)) {
+                commissionIncome.setJournalEntry(JournalEntryConstants.ENTRY_62_11_90_7);
+            } else {
+                commissionIncome.setJournalEntry(JournalEntryConstants.ENTRY_90_4_62_11);
+            }
+            commissionExchangeIncomeList.add(commissionIncome);
+            exchangeIncomeContainer.setCommissionExchangeIncome(commissionExchangeIncomeList);
         }
-
-        completionCertificateVSPaymentExchangeIncome.setIncomeAmount(completionCertificateVSPaymentExchangeIncomeAmount);
-        if (isPositiveOrZero(completionCertificateVSPaymentExchangeIncomeAmount)) {
-            completionCertificateVSPaymentExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_62_11_60_11);
-        } else {
-            completionCertificateVSPaymentExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_60_11_62_11);
-        }
-
-        return completionCertificateVSPaymentExchangeIncome;
+        return exchangeIncomeContainer;
     }
 
     private CommissionExchangeIncome buildCommissionExchangeIncome(List<Payment> incomingPayments
@@ -204,39 +193,99 @@ public class RusRubExchangeIncomeService {
         BigDecimal accumulatedIncomingPayments = BigDecimal.ZERO;
         boolean isCommissionSubtracted = false;
 
-        if(!isPayableAmountFullyPaid && !isReceivableAmountFullyPaid) {
-            JOptionPane.showMessageDialog(null, "Входящий или исходящий долг не полностью погашен" );
-        }
-
-        else if (incomingPayments.size() > 1 && outgoingPayments.size() == 1) {
-                BigDecimal outgoingPaymentRate = outgoingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
-                for (Payment payment : incomingPayments) {//пойдем по всем платежам
-                    BigDecimal incomingPaymentAmount = payment.getPaymentAmount();
-                    accumulatedIncomingPayments = accumulatedIncomingPayments.add(incomingPaymentAmount);//складываем всеплатежи тут
-                    if (accumulatedIncomingPayments.compareTo(commissionAmount) > 0) {// если платежи привысили комиссию
-                        if (!isCommissionSubtracted) {// если комиссия не вычтена из платежей
-                            incomingPaymentAmount = incomingPaymentAmount.subtract(commissionAmount);
-                            isCommissionSubtracted = true;
-                        }//коммиссия вычтена
-                        BigDecimal incomingPaymentRate = payment.getExchangeRate().getRate();
-                        receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRate, outgoingPaymentRate
-                                , incomingPaymentAmount));
-                    }
-                }
-            } else if (incomingPayments.size() == 1 && outgoingPayments.size() == 1) {
-                BigDecimal incomingPaymentRate = incomingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
-                BigDecimal outgoingPaymentRate = outgoingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
-                receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRate
-                        , outgoingPaymentRate, payableAmount));
-            } else if (incomingPayments.size() == 1 && outgoingPayments.size() > 1) {
-                BigDecimal incomingPaymentRate = incomingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
-                for (Payment payment : outgoingPayments) {//пойдем по всем платежам
-                    BigDecimal outgoingPaymentAmount = payment.getPaymentAmount();
-                    BigDecimal outgoingPaymentRate = payment.getExchangeRate().getRate();
-                    receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add
-                            (count(incomingPaymentRate, outgoingPaymentRate, outgoingPaymentAmount));
+        if (!isPayableAmountFullyPaid && !isReceivableAmountFullyPaid) {
+            JOptionPane.showMessageDialog(null, "Входящий или исходящий долг не полностью погашен");
+        } else if (incomingPayments.size() > 1 && outgoingPayments.size() == 1) {
+            BigDecimal outgoingPaymentRate = outgoingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
+            for (Payment payment : incomingPayments) {//пойдем по всем платежам
+                BigDecimal incomingPaymentAmount = payment.getPaymentAmount();
+                accumulatedIncomingPayments = accumulatedIncomingPayments.add(incomingPaymentAmount);//складываем всеплатежи тут
+                if (accumulatedIncomingPayments.compareTo(commissionAmount) > 0) {// если платежи привысили комиссию
+                    if (!isCommissionSubtracted) {// если комиссия не вычтена из платежей
+                        incomingPaymentAmount = incomingPaymentAmount.subtract(commissionAmount);
+                        isCommissionSubtracted = true;
+                    }//коммиссия вычтена
+                    BigDecimal incomingPaymentRate = payment.getExchangeRate().getRate();
+                    receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRate, outgoingPaymentRate
+                            , incomingPaymentAmount));
                 }
             }
+        } else if (incomingPayments.size() == 1 && outgoingPayments.size() == 1) {
+            BigDecimal incomingPaymentRate = incomingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
+            BigDecimal outgoingPaymentRate = outgoingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
+            receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add(count(incomingPaymentRate
+                    , outgoingPaymentRate, payableAmount));
+        } else if (incomingPayments.size() == 1 && outgoingPayments.size() > 1) {
+            BigDecimal incomingPaymentRate = incomingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
+            for (Payment payment : outgoingPayments) {//пойдем по всем платежам
+                BigDecimal outgoingPaymentAmount = payment.getPaymentAmount();
+                BigDecimal outgoingPaymentRate = payment.getExchangeRate().getRate();
+                receivedVSPaidExchangeIncomeAmount = receivedVSPaidExchangeIncomeAmount.add
+                        (count(incomingPaymentRate, outgoingPaymentRate, outgoingPaymentAmount));
+            }
+        }
+        if (!receivedVSPaidExchangeIncomeAmount.equals(BigDecimal.ZERO)) {
+            receivedVSPaidExchangeIncome = new ReceivedVSPaidExchangeIncome();
+            receivedVSPaidExchangeIncome.setIncomeAmount(receivedVSPaidExchangeIncomeAmount);
+            if (isPositiveOrZero(receivedVSPaidExchangeIncomeAmount)) {
+                receivedVSPaidExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_60_11_90_7);
+            } else {
+                receivedVSPaidExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_90_4_60_11);
+            }
+        }
+
+        return receivedVSPaidExchangeIncome;
+    }
+
+    private ActVSIncomingPaymentExchangeIncome completionCertificateVSPaymentExchangeIncome(List<Payment> incomingPayments
+            , BigDecimal commissionAmount, BigDecimal actDateExchangeRateAmount, BigDecimal payableAmount
+            , BigDecimal receivableAmount) {
+
+        ActVSIncomingPaymentExchangeIncome actVSIncomingPaymentExchangeIncome
+                = new ActVSIncomingPaymentExchangeIncome();
+
+        boolean isReceivableAmountFullyPaid = isAmountFullyPaid(receivableAmount, incomingPayments);
+        BigDecimal accumulatedPayments = BigDecimal.ZERO;
+        BigDecimal completionCertificateVSPaymentExchangeIncomeAmount = BigDecimal.ZERO;
+        boolean isCommissionSubtracted = false;
+
+        if (incomingPayments.size() > 1 && isReceivableAmountFullyPaid) {
+            Log.info("* * * Class RusRubExchangeIncomeService * * *");
+
+            for (Payment payment : incomingPayments) {//пойдем по всем платежам
+                BigDecimal incomingPaymentAmount = payment.getPaymentAmount();
+                accumulatedPayments = accumulatedPayments.add(incomingPaymentAmount);//складываем все платежи тут
+                if (accumulatedPayments.compareTo(commissionAmount) > 0) {// если платежи привысили комиссию
+                    if (!isCommissionSubtracted) {// если комиссия не вычтена из платежей
+                        incomingPaymentAmount = incomingPaymentAmount.subtract(commissionAmount);
+                        isCommissionSubtracted = true;
+                    }//коммиссия вычтена
+                    BigDecimal incomingPaymentRate = payment.getExchangeRate().getRate();
+                    completionCertificateVSPaymentExchangeIncomeAmount = completionCertificateVSPaymentExchangeIncomeAmount
+                            .add(count(actDateExchangeRateAmount, incomingPaymentRate, incomingPaymentAmount));
+                }//конец если платежи привысили комиссию
+            }
+        } else {// если платеж был 1
+            BigDecimal incomingPaymentRate = incomingPayments.get(SINGLE_PAYMENT_INDEX).getExchangeRate().getRate();
+            Log.info("* * * Class RusRubExchangeIncomeService * * * ");
+            Log.info("PaymentDate " + incomingPayments.get(SINGLE_PAYMENT_INDEX).getPaymentDate() + " incomingPaymentRate " + incomingPaymentRate);
+
+            completionCertificateVSPaymentExchangeIncomeAmount = completionCertificateVSPaymentExchangeIncomeAmount.add(count(actDateExchangeRateAmount, incomingPaymentRate
+                    , payableAmount));
+            Log.info("completionCertificateVSPaymentExchangeIncomeAmount  after add " + completionCertificateVSPaymentExchangeIncomeAmount);
+        }
+
+        actVSIncomingPaymentExchangeIncome.setIncomeAmount(completionCertificateVSPaymentExchangeIncomeAmount);
+        if (isPositiveOrZero(completionCertificateVSPaymentExchangeIncomeAmount)) {
+            actVSIncomingPaymentExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_62_11_60_11);
+        } else {
+            actVSIncomingPaymentExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_60_11_62_11);
+        }
+
+        return actVSIncomingPaymentExchangeIncome;
+    }
+
+
 
 //             else if (incomingPayments.size() > 1 && outgoingPayments.size() > 1) {
 //                Payment incomingPayment;
@@ -296,19 +345,6 @@ public class RusRubExchangeIncomeService {
 //                    }
 //                }
 //            }
-
-        if (!receivedVSPaidExchangeIncomeAmount.equals(BigDecimal.ZERO)) {
-            receivedVSPaidExchangeIncome = new ReceivedVSPaidExchangeIncome();
-            receivedVSPaidExchangeIncome.setIncomeAmount(receivedVSPaidExchangeIncomeAmount);
-            if (isPositiveOrZero(receivedVSPaidExchangeIncomeAmount)) {
-                receivedVSPaidExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_60_11_90_7);
-            } else {
-                receivedVSPaidExchangeIncome.setJournalEntry(JournalEntryConstants.ENTRY_90_4_60_11);
-            }
-        }
-
-        return receivedVSPaidExchangeIncome;
-    }
 
     private String buildAccountExchangeIncomeJournalEntry(ReceivedVSPaidExchangeIncome receivedPaidExchangeIncome) {
         if (receivedPaidExchangeIncome.getIncomeAmount().compareTo(BigDecimal.ZERO) > 0) {

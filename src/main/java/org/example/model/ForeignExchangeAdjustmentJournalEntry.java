@@ -2,7 +2,7 @@ package org.example.model;
 
 public class ForeignExchangeAdjustmentJournalEntry {
     String entry;
-    private Transaction transactions;
+    private FreightJournalRecord transactions;
 
     //CurrencyDiff сохраняется в базе данных через CurrencyDiffRepository.
 
