@@ -17,7 +17,7 @@ import java.util.List;
 import static org.example.constants.JournalEntryConstants.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class ExchangeIncomeServiceTest {
+class RusRubExchangeIncomeServiceTest {
     FreightJournalRecord expectedFreightJournalRecord;
 
     @BeforeEach
