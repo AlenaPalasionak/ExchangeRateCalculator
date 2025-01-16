@@ -2,11 +2,8 @@ package org.example.service;
 
 import org.example.model.ExchangeRate;
 import org.example.model.Payment;
-import org.example.model.FreightJournalRecord;
-import org.example.model.non_operating_income.AccountExchangeIncome;
-import org.example.model.non_operating_income.CommissionExchangeIncome;
-import org.example.model.non_operating_income.ActVSIncomingPaymentExchangeIncome;
-import org.example.model.non_operating_income.ReceivedVSPaidExchangeIncome;
+import org.example.model.PaymentTransactionEntry;
+import org.example.model.non_operating_income.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -18,12 +15,36 @@ import static org.example.constants.JournalEntryConstants.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class RusRubExchangeIncomeServiceTest {
-    FreightJournalRecord expectedFreightJournalRecord;
+    PaymentTransactionEntry expectedPaymentTransactionEntry;
 
     @BeforeEach
-    public void createTransaction() {
-        List<Payment> incomingPayments = new ArrayList<>();
-        List<Payment> outgoingPayments = new ArrayList<>();
+    public void createPaymentTransactionEntry() {
+        ExchangeIncomeContainerForOneFreight exchangeIncomeContainerForOneFreight = new ExchangeIncomeContainerForOneFreight();
+
+        List<AbstractExchangeIncome> commissionExchangeIncomeList = new ArrayList<>();
+        List<AbstractExchangeIncome> actVSIncomingPaymentExchangeIncomeList = new ArrayList<>();
+        List<AbstractExchangeIncome> receivedVSPaidExchangeIncomeList = new ArrayList<>();
+        List<AbstractExchangeIncome> accountExchangeIncomeList = new ArrayList<>();
+
+        AbstractExchangeIncome completionCertificateVSPaymentExchangeIncome;
+        AbstractExchangeIncome commissionExchangeIncome;
+        AbstractExchangeIncome receivedVSPaidExchangeIncome;
+        AbstractExchangeIncome accountExchange;
+
+        String actNumber = "2";//A +
+        BigDecimal actAmount = new BigDecimal("72000");//B
+        ExchangeRate actDateExchangeRate = new BigDecimal("3.5741");;//C
+        BigDecimal incomingPaymentAmountDividedBy100;// D
+        BigDecimal incomingPaymentRate;//E
+        BigDecimal outgoingPaymentAmountDividedBy100;//F - входящий курс оплаты нам
+        BigDecimal outgoingPaymentRate;//G - курс оплаты перевозчику
+        BigDecimal commissionDividedBy100;// H
+
+        List<AbstractExchangeIncome> actVSIncomingPaymentExchangeIncome;//I, L
+        List<AbstractExchangeIncome> commissionExchangeIncome;//J, M
+        List<AbstractExchangeIncome> receivedVSPaidExchangeIncome;//K, N
+        List<AbstractExchangeIncome> accountExchangeIncome;//O, P
+        String actDate;//Q
 
         Payment incomingPayment = new Payment(new BigDecimal("72000")
                 , "01.02.2024"
@@ -35,7 +56,7 @@ class RusRubExchangeIncomeServiceTest {
                 , new ExchangeRate("10.02.2024", new BigDecimal("3.5363"))
                 , "рос");
         outgoingPayments.add(ougoingPayment);
-        BigDecimal actDateExchangeRateAmount = new BigDecimal("3.5741");
+        BigDecimal actDateExchangeRateAmount =
         ExchangeRate actDateExchangeRate = new ExchangeRate("21.01.2024", actDateExchangeRateAmount);
         BigDecimal receivableAmount = new BigDecimal("72000");
         BigDecimal payableAmount = new BigDecimal("67000");
@@ -56,56 +77,60 @@ class RusRubExchangeIncomeServiceTest {
         AccountExchangeIncome accountExchangeIncome = new AccountExchangeIncome();
         accountExchangeIncome.setJournalEntry(ENTRY_52_1_60_11);
 
-        expectedFreightJournalRecord = new FreightJournalRecord(receivableAmount, payableAmount, incomingPayments, outgoingPayments
+        expectedPaymentTransactionEntry = new PaymentTransactionEntry(receivableAmount, payableAmount, incomingPayments, outgoingPayments
                 , false, "21.01.2024", new BigDecimal("5000")
                 , "2", actDateExchangeRate, actVSIncomingPaymentExchangeIncome
                 , commissionExchangeIncome, receivedPaidExchangeIncome, accountExchangeIncome);
     }
 
     @Test
-    void getTransactions() {
-        List<FreightJournalRecord> sourceTableData = new RusRubExchangeIncomeService().getPaymentTransactionEntry();
+    void getPaymentTransactionEntryList() {
 
-        FreightJournalRecord actualFreightJournalRecord = sourceTableData.get(0);
 
-        createTransaction();
 
-        assertEquals(expectedFreightJournalRecord.getIncomingPaymentList(), actualFreightJournalRecord.getIncomingPaymentList());
-        assertEquals(expectedFreightJournalRecord.getOutgoingPaymentList(), actualFreightJournalRecord.getOutgoingPaymentList());
 
-        assertEquals(expectedFreightJournalRecord.isAccountBalance()
-                , actualFreightJournalRecord.isAccountBalance());
+        List<PaymentTransactionEntry> sourceTableData = new RusRubExchangeIncomeService().getPaymentTransactionEntryList();
 
-        assertEquals(expectedFreightJournalRecord.getActDate()
-                , actualFreightJournalRecord.getActDate());
+        PaymentTransactionEntry actualPaymentTransactionEntry = sourceTableData.get(0);
 
-        assertEquals(expectedFreightJournalRecord.getActNumber()
-                , actualFreightJournalRecord.getActNumber());
+        createPaymentTransactionEntry();
 
-        assertEquals(expectedFreightJournalRecord.getCommission(), actualFreightJournalRecord.getCommission());
-        assertEquals(expectedFreightJournalRecord.getActDateExchangeRate(), actualFreightJournalRecord.getActDateExchangeRate());
+        assertEquals(expectedPaymentTransactionEntry.getIncomingPaymentList(), actualPaymentTransactionEntry.getIncomingPaymentList());
+        assertEquals(expectedPaymentTransactionEntry.getOutgoingPaymentList(), actualPaymentTransactionEntry.getOutgoingPaymentList());
 
-        assertEquals(expectedFreightJournalRecord.getCompletionCertificateVSPaymentExchangeIncome()
-                , actualFreightJournalRecord.getCompletionCertificateVSPaymentExchangeIncome());
+        assertEquals(expectedPaymentTransactionEntry.isAccountBalance()
+                , actualPaymentTransactionEntry.isAccountBalance());
 
-        assertEquals(expectedFreightJournalRecord.getCommissionExchangeIncome()
-                , actualFreightJournalRecord.getCommissionExchangeIncome());
+        assertEquals(expectedPaymentTransactionEntry.getActDate()
+                , actualPaymentTransactionEntry.getActDate());
 
-        assertEquals(expectedFreightJournalRecord.getReceivedVSPaidExchangeIncome()
-                , actualFreightJournalRecord.getReceivedVSPaidExchangeIncome());
+        assertEquals(expectedPaymentTransactionEntry.getActNumber()
+                , actualPaymentTransactionEntry.getActNumber());
 
-        assertEquals(expectedFreightJournalRecord.getAccountExchangeIncome().getIncomeAmount()
-                , actualFreightJournalRecord.getAccountExchangeIncome().getIncomeAmount());
+        assertEquals(expectedPaymentTransactionEntry.getCommission(), actualPaymentTransactionEntry.getCommission());
+        assertEquals(expectedPaymentTransactionEntry.getActDateExchangeRate(), actualPaymentTransactionEntry.getActDateExchangeRate());
 
-        assertEquals(expectedFreightJournalRecord.getAccountExchangeIncome().getJournalEntry()
-                , actualFreightJournalRecord.getAccountExchangeIncome().getJournalEntry());
+        assertEquals(expectedPaymentTransactionEntry.getCompletionCertificateVSPaymentExchangeIncome()
+                , actualPaymentTransactionEntry.getCompletionCertificateVSPaymentExchangeIncome());
 
-        assertEquals(expectedFreightJournalRecord.getReceivableAmount()
-                , actualFreightJournalRecord.getReceivableAmount());
+        assertEquals(expectedPaymentTransactionEntry.getCommissionExchangeIncome()
+                , actualPaymentTransactionEntry.getCommissionExchangeIncome());
 
-        assertEquals(expectedFreightJournalRecord.getPayableAmount()
-                , actualFreightJournalRecord.getPayableAmount());
+        assertEquals(expectedPaymentTransactionEntry.getReceivedVSPaidExchangeIncome()
+                , actualPaymentTransactionEntry.getReceivedVSPaidExchangeIncome());
 
-        assertEquals(expectedFreightJournalRecord, actualFreightJournalRecord);
+        assertEquals(expectedPaymentTransactionEntry.getAccountExchangeIncome().getIncomeAmount()
+                , actualPaymentTransactionEntry.getAccountExchangeIncome().getIncomeAmount());
+
+        assertEquals(expectedPaymentTransactionEntry.getAccountExchangeIncome().getJournalEntry()
+                , actualPaymentTransactionEntry.getAccountExchangeIncome().getJournalEntry());
+
+        assertEquals(expectedPaymentTransactionEntry.getReceivableAmount()
+                , actualPaymentTransactionEntry.getReceivableAmount());
+
+        assertEquals(expectedPaymentTransactionEntry.getPayableAmount()
+                , actualPaymentTransactionEntry.getPayableAmount());
+
+        assertEquals(expectedPaymentTransactionEntry, actualPaymentTransactionEntry);
     }
 }

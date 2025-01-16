@@ -9,6 +9,11 @@ import java.math.BigDecimal;
 @Setter
 @EqualsAndHashCode
 public abstract class AbstractExchangeIncome {
-    private BigDecimal incomeAmount;
-    private String journalEntry;
+    protected BigDecimal incomeAmount;
+    protected String journalEntry;
+    private BigDecimal rate1;
+    private BigDecimal rate2;
+    protected BigDecimal amount;
+
+
 }

@@ -20,7 +20,7 @@ public class ExchangeIncomeTableImpl implements ExchangeIncomeTable {
     public static final String RATE_DIFFERENCE_SPREADSHEET_ID_KEY = "rate_difference_spreadsheet";
     public final String RATE_DIFFERENCE_SPREADSHEET_ID = Config.getProperties().getProperty(RATE_DIFFERENCE_SPREADSHEET_ID_KEY);
     private static final String RANGE = "Sheet1!A1";
-    private static final List<FreightJournalRecord> SOURCE_TABLE_DATA = new RusRubExchangeIncomeService().getPaymentTransactionEntry();
+    private static final List<PaymentTransactionEntry> SOURCE_TABLE_DATA = new RusRubExchangeIncomeService().getPaymentTransactionEntryList();
     PaymentTransactionEntry paymentTransactionEntry;
 
 
