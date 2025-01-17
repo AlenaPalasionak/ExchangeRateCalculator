@@ -5,15 +5,14 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+
 @Getter
 @Setter
 @EqualsAndHashCode
 public abstract class AbstractExchangeIncome {
-    protected BigDecimal incomeAmount;
+    protected BigDecimal exchangeIncomeAmount;
     protected String journalEntry;
-    private BigDecimal rate1;
-    private BigDecimal rate2;
-    protected BigDecimal amount;
-
-
+    protected BigDecimal rate1;
+    protected BigDecimal rate2;
+    protected BigDecimal paymentAmount;
 }

@@ -87,7 +87,7 @@ public class ExchangeIncomeTableImpl implements ExchangeIncomeTable {
                 Integer columnIndex = COLUMN_MAPPING.get(income.getJournalEntry());
                 if (columnIndex != null) {
                     // Заполнение столбца H-O соответствующим значением
-                    dynamicColumns.set(columnIndex - 7, income.getIncomeAmount());
+                    dynamicColumns.set(columnIndex - 7, income.getExchangeIncomeAmount());
                 }
             }
         }

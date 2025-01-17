@@ -15,67 +15,62 @@ import static org.example.constants.JournalEntryConstants.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class RusRubExchangeIncomeServiceTest {
-    PaymentTransactionEntry expectedPaymentTransactionEntry;
+    PaymentTransactionEntry paymentTransactionEntry;
 
     @BeforeEach
     public void createPaymentTransactionEntry() {
-        ExchangeIncomeContainerForOneFreight exchangeIncomeContainerForOneFreight = new ExchangeIncomeContainerForOneFreight();
-
-        List<AbstractExchangeIncome> commissionExchangeIncomeList = new ArrayList<>();
-        List<AbstractExchangeIncome> actVSIncomingPaymentExchangeIncomeList = new ArrayList<>();
-        List<AbstractExchangeIncome> receivedVSPaidExchangeIncomeList = new ArrayList<>();
-        List<AbstractExchangeIncome> accountExchangeIncomeList = new ArrayList<>();
-
-        AbstractExchangeIncome completionCertificateVSPaymentExchangeIncome;
-        AbstractExchangeIncome commissionExchangeIncome;
-        AbstractExchangeIncome receivedVSPaidExchangeIncome;
-        AbstractExchangeIncome accountExchange;
+        paymentTransactionEntry = new PaymentTransactionEntry();
 
         String actNumber = "2";//A +
         BigDecimal actAmount = new BigDecimal("72000");//B
-        ExchangeRate actDateExchangeRate = new BigDecimal("3.5741");;//C
-        BigDecimal incomingPaymentAmountDividedBy100;// D
-        BigDecimal incomingPaymentRate;//E
-        BigDecimal outgoingPaymentAmountDividedBy100;//F - входящий курс оплаты нам
-        BigDecimal outgoingPaymentRate;//G - курс оплаты перевозчику
-        BigDecimal commissionDividedBy100;// H
+        String actDate = " 21.01.2024";//Q
 
-        List<AbstractExchangeIncome> actVSIncomingPaymentExchangeIncome;//I, L
-        List<AbstractExchangeIncome> commissionExchangeIncome;//J, M
-        List<AbstractExchangeIncome> receivedVSPaidExchangeIncome;//K, N
-        List<AbstractExchangeIncome> accountExchangeIncome;//O, P
-        String actDate;//Q
-
-        Payment incomingPayment = new Payment(new BigDecimal("72000")
-                , "01.02.2024"
-                , new ExchangeRate("01.02.2024", new BigDecimal("3.5537"))
-                , "рос");
-        incomingPayments.add(incomingPayment);
-        Payment ougoingPayment = new Payment(new BigDecimal("67000")
-                , "10.02.2024"
-                , new ExchangeRate("10.02.2024", new BigDecimal("3.5363"))
-                , "рос");
-        outgoingPayments.add(ougoingPayment);
-        BigDecimal actDateExchangeRateAmount =
-        ExchangeRate actDateExchangeRate = new ExchangeRate("21.01.2024", actDateExchangeRateAmount);
-        BigDecimal receivableAmount = new BigDecimal("72000");
-        BigDecimal payableAmount = new BigDecimal("67000");
-
-        ActVSIncomingPaymentExchangeIncome actVSIncomingPaymentExchangeIncome
-                = new ActVSIncomingPaymentExchangeIncome();
-        actVSIncomingPaymentExchangeIncome.setIncomeAmount(new BigDecimal("13.67"));
+        AbstractExchangeIncome actVSIncomingPaymentExchangeIncome = new ActVSIncomingPaymentExchangeIncome();
+        BigDecimal actInExchangeIncomeAmount = new BigDecimal("14,69");
+        BigDecimal actInRate1 = new BigDecimal("3.5741");
+        BigDecimal actInRate2 = new BigDecimal("3.5537");
+        BigDecimal actInPaymentAmount = new BigDecimal("720");
+        actVSIncomingPaymentExchangeIncome.setExchangeIncomeAmount(actInExchangeIncomeAmount);
         actVSIncomingPaymentExchangeIncome.setJournalEntry(ENTRY_62_11_60_11);
+        actVSIncomingPaymentExchangeIncome.setRate1(actInRate1);
+        actVSIncomingPaymentExchangeIncome.setRate1(actInRate2);
+        actVSIncomingPaymentExchangeIncome.setPaymentAmount(actInPaymentAmount);
 
-        CommissionExchangeIncome commissionExchangeIncome = new CommissionExchangeIncome();
-        commissionExchangeIncome.setIncomeAmount(new BigDecimal("1.02"));
+        AbstractExchangeIncome commissionExchangeIncome = new CommissionExchangeIncome();
+        BigDecimal commissionExchangeIncomeAmount = new BigDecimal("1.02");
+        BigDecimal commissionRate1 = new BigDecimal("3.5741");
+        BigDecimal commissionRate2 = new BigDecimal("3.5537");
+        BigDecimal commissionPaymentAmount = new BigDecimal("50");
+        commissionExchangeIncome.setExchangeIncomeAmount(commissionExchangeIncomeAmount);
         commissionExchangeIncome.setJournalEntry(ENTRY_62_11_90_7);
+        commissionExchangeIncome.setRate1(commissionRate1);
+        commissionExchangeIncome.setRate1(commissionRate2);
+        commissionExchangeIncome.setPaymentAmount(commissionPaymentAmount);
 
-        ReceivedVSPaidExchangeIncome receivedPaidExchangeIncome = new ReceivedVSPaidExchangeIncome();
-        receivedPaidExchangeIncome.setIncomeAmount(new BigDecimal("11.66"));
-        receivedPaidExchangeIncome.setJournalEntry(ENTRY_60_11_90_7);
+        AbstractExchangeIncome receivedVSPaidExchangeIncome = new ReceivedVSPaidExchangeIncome();
+        BigDecimal receivedPaidExchangeIncomeAmount = new BigDecimal("11.66");
+        BigDecimal receivedPaidRate1 = new BigDecimal("3.5537");
+        BigDecimal receivedPaidRate2 = new BigDecimal("3.5363");
+        BigDecimal receivedPaidPaymentAmount = new BigDecimal("670");
+        receivedVSPaidExchangeIncome.setExchangeIncomeAmount(receivedPaidExchangeIncomeAmount);
+        receivedVSPaidExchangeIncome.setJournalEntry(ENTRY_60_11_90_7);
+        receivedVSPaidExchangeIncome.setRate1(receivedPaidRate1);
+        receivedVSPaidExchangeIncome.setRate1(receivedPaidRate2);
+        receivedVSPaidExchangeIncome.setPaymentAmount(receivedPaidPaymentAmount);
 
-        AccountExchangeIncome accountExchangeIncome = new AccountExchangeIncome();
-        accountExchangeIncome.setJournalEntry(ENTRY_52_1_60_11);
+        AbstractExchangeIncome accountExchangeIncome = new AccountExchangeIncome();
+        receivedVSPaidExchangeIncome.setJournalEntry(ENTRY_52_1_60_11);
+
+        paymentTransactionEntry.setActNumber(actNumber);
+        paymentTransactionEntry.setActAmount(actAmount);
+        paymentTransactionEntry.setActDate(actDate);
+        paymentTransactionEntry.setActVSIncomingPaymentExchangeIncome(actVSIncomingPaymentExchangeIncome);
+        paymentTransactionEntry.setCommissionExchangeIncome(commissionExchangeIncome);
+        paymentTransactionEntry.setReceivedVSPaidExchangeIncome(receivedVSPaidExchangeIncome);
+        paymentTransactionEntry.setAccountExchangeIncome(accountExchangeIncome);
+
+
+
 
         expectedPaymentTransactionEntry = new PaymentTransactionEntry(receivableAmount, payableAmount, incomingPayments, outgoingPayments
                 , false, "21.01.2024", new BigDecimal("5000")
@@ -85,9 +80,6 @@ class RusRubExchangeIncomeServiceTest {
 
     @Test
     void getPaymentTransactionEntryList() {
-
-
-
 
         List<PaymentTransactionEntry> sourceTableData = new RusRubExchangeIncomeService().getPaymentTransactionEntryList();
 
@@ -119,8 +111,8 @@ class RusRubExchangeIncomeServiceTest {
         assertEquals(expectedPaymentTransactionEntry.getReceivedVSPaidExchangeIncome()
                 , actualPaymentTransactionEntry.getReceivedVSPaidExchangeIncome());
 
-        assertEquals(expectedPaymentTransactionEntry.getAccountExchangeIncome().getIncomeAmount()
-                , actualPaymentTransactionEntry.getAccountExchangeIncome().getIncomeAmount());
+        assertEquals(expectedPaymentTransactionEntry.getAccountExchangeIncome().getExchangeIncomeAmount()
+                , actualPaymentTransactionEntry.getAccountExchangeIncome().getExchangeIncomeAmount());
 
         assertEquals(expectedPaymentTransactionEntry.getAccountExchangeIncome().getJournalEntry()
                 , actualPaymentTransactionEntry.getAccountExchangeIncome().getJournalEntry());

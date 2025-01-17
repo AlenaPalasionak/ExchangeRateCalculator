@@ -9,4 +9,5 @@ import lombok.Setter;
 @EqualsAndHashCode(callSuper = true)
 public class CommissionExchangeIncome extends AbstractExchangeIncome {
 
+
 }

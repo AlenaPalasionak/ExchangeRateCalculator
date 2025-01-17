@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.example.constants.AccountantBookConstants.*;
@@ -38,36 +39,90 @@ public class RusRubExchangeIncomeService {
     }
 
     public List<PaymentTransactionEntry> getPaymentTransactionEntryList() {
-        List<PaymentTransactionEntry> transactionsInForeignCurrency = new ArrayList<>();
+        List<PaymentTransactionEntry> paymentTransactionEntryList = new ArrayList<>();
 
         for (List<Object> rowInForeignCurrency : this.transactionTableInForeignCurrency) {
-            PaymentTransactionEntry paymentTransactionEntry = createPaymentTransactionEntry(rowInForeignCurrency);
+            List<PaymentTransactionEntry> oneFreightPaymentTransactionEntryList = createOneFreightPaymentTransactionEntry
+                    (rowInForeignCurrency);
+            paymentTransactionEntryList.addAll(oneFreightPaymentTransactionEntryList);
 //            if (freightJournalRecord.getCompletionCertificateVSPaymentExchangeIncome() != null && freightJournalRecord
 //                    .getCommissionExchangeIncome() != null
 //                    && freightJournalRecord.getReceivedVSPaidExchangeIncome() != null && freightJournalRecord
 //                    .getAccountExchangeIncome() != null) {
-            transactionsInForeignCurrency.add(paymentTransactionEntry);
         }
-
-        return transactionsInForeignCurrency;
+        return paymentTransactionEntryList;
     }
 
-    private PaymentTransactionEntry createPaymentTransactionEntry(List<Object> rowObject) {
-        List<PaymentTransactionEntry> paymentTransactionEntryList = new ArrayList<>();
+    /**
+     * @param rowObject one row of an accountant table
+     * @return List of PaymentTransaction Data of one Freight
+     */
+    private List<PaymentTransactionEntry> createOneFreightPaymentTransactionEntry(List<Object> rowObject) {
+        List<PaymentTransactionEntry> oneFreightPaymentTransactionEntryList = new ArrayList<>();
 
         String actDate = StringHelper.retrieveDateFromString(String.valueOf(rowObject.get(ACT_DATE)));//*****Q
-        String actNumber = String.valueOf(rowObject.get(ACT_NUMBER));//*****A
+        String actNumber = String.valueOf(rowObject.get(ACT_NUMBER));//*****A*****
         BigDecimal receivableAmount = StringHelper.retrieveNumberFromString(String.valueOf
-                (rowObject.get(INCOMING_PAYMENT_AMOUNT)));//*****B
+                (rowObject.get(INCOMING_PAYMENT_AMOUNT)));//*****B*****
         ExchangeRate actDateExchangeRate = exchangeRateService.getExchangeRate(actDate);
-        BigDecimal actDateExchangeRateAmount = exchangeRateService.getExchangeRateAmount(actDate);//*****C
+        BigDecimal actDateExchangeRateAmount = exchangeRateService.getExchangeRateAmount(actDate);//*****C*****
+
         List<Payment> incomingPayments = foreignCurrencyAccountantTableService.buildIncomingPayment(rowObject);
         List<Payment> outgoingPayments = foreignCurrencyAccountantTableService.buildOutgoingPayment(rowObject);
-
-        BigDecimal commissionAmountDividedBy100 = foreignCurrencyAccountantTableService.countCommission(rowObject)
-                .divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
+        BigDecimal commissionAmount = foreignCurrencyAccountantTableService.countCommission(rowObject);
 
         BigDecimal payableAmount = StringHelper.retrieveNumberFromString(String.valueOf(rowObject.get(OUTGOING_PAYMENT_AMOUNT)));
+
+        ExchangeIncomeContainerForOneFreight exchangeIncomeContainerForOneFreight
+                = buildExchangeIncomeContainerForOneFreight(incomingPayments, outgoingPayments, receivableAmount
+                , payableAmount, commissionAmount, actDateExchangeRateAmount);
+        assert exchangeIncomeContainerForOneFreight != null;
+
+        List<AbstractExchangeIncome> actVSIncomingPaymentExchangeIncomeList = exchangeIncomeContainerForOneFreight
+                .getActVSIncomingPaymentExchangeIncomeList();//I, L
+        List<AbstractExchangeIncome> commissionExchangeIncomeList = exchangeIncomeContainerForOneFreight
+                .getCommissionExchangeIncomeList();//J, M
+        List<AbstractExchangeIncome> receivedVSPaidExchangeIncomeList = exchangeIncomeContainerForOneFreight
+                .getReceivedVSPaidExchangeIncomeList();//K, N
+        List<AbstractExchangeIncome> accountExchangeIncomeList = exchangeIncomeContainerForOneFreight
+                .getAccountExchangeIncomeList(); //O, P
+
+        AbstractExchangeIncome actVSIncomingPaymentExchangeIncome;
+        AbstractExchangeIncome commissionExchangeIncome;
+        AbstractExchangeIncome receivedVSPaidExchangeIncome;
+        AbstractExchangeIncome accountExchangeIncome;
+
+        Iterator<AbstractExchangeIncome> actIterator = actVSIncomingPaymentExchangeIncomeList.iterator();
+        Iterator<AbstractExchangeIncome> commissionIterator = commissionExchangeIncomeList.iterator();
+        Iterator<AbstractExchangeIncome> receivedIterator = receivedVSPaidExchangeIncomeList.iterator();
+        Iterator<AbstractExchangeIncome> accountIterator = accountExchangeIncomeList.iterator();
+
+        while (actIterator.hasNext() || commissionIterator.hasNext() || receivedIterator.hasNext() || accountIterator.hasNext()) {
+            PaymentTransactionEntry paymentTransactionEntry = new PaymentTransactionEntry();
+            paymentTransactionEntry.setActNumber(actNumber);
+            paymentTransactionEntry.setActAmount(receivableAmount);
+            paymentTransactionEntry.setActDate(actDate);
+            if (actIterator.hasNext()) {
+                actVSIncomingPaymentExchangeIncome = actIterator.next();
+                paymentTransactionEntry.setActVSIncomingPaymentExchangeIncome(actVSIncomingPaymentExchangeIncome);
+            }
+
+            if (commissionIterator.hasNext()) {
+                commissionExchangeIncome = commissionIterator.next();
+                paymentTransactionEntry.setCommissionExchangeIncome(commissionExchangeIncome);
+            }
+
+            if (receivedIterator.hasNext()) {
+                receivedVSPaidExchangeIncome = receivedIterator.next();
+                paymentTransactionEntry.setReceivedVSPaidExchangeIncome(receivedVSPaidExchangeIncome);
+            }
+
+            if (accountIterator.hasNext()) {
+                accountExchangeIncome = accountIterator.next();
+                paymentTransactionEntry.setAccountExchangeIncome(accountExchangeIncome);
+            }
+            oneFreightPaymentTransactionEntryList.add(paymentTransactionEntry);
+        }
 
         //BigDecimal outgoingPaymentRate = outgoingPayments.get(OUTGOING_PAYMENT_AMOUNT).getExchangeRate().getRate();
 
@@ -77,19 +132,7 @@ public class RusRubExchangeIncomeService {
 //        BigDecimal outgoingPaymentAmountDividedBy100 = outgoingPayments.get(OUTGOING_PAYMENT_AMOUNT).getPaymentAmount()
 //                .divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
 
-        ExchangeIncomeContainerForOneFreight exchangeIncomeContainerForOneFreight
-                = buildExchangeIncomeContainerForOneFreight(incomingPayments, outgoingPayments, receivableAmount
-                , payableAmount, commissionAmountDividedBy100, actDateExchangeRateAmount, actNumber);
-        assert exchangeIncomeContainerForOneFreight != null;
-        List<AbstractExchangeIncome> actVSIncomingPaymentExchangeIncome = exchangeIncomeContainerForOneFreight.getActVSIncomingPaymentExchangeIncomeList();//I, L
-        List<AbstractExchangeIncome> commissionExchangeIncome = exchangeIncomeContainerForOneFreight.getCommissionExchangeIncomeList();//J, M
-        List<AbstractExchangeIncome> receivedVSPaidExchangeIncome = exchangeIncomeContainerForOneFreight.getReceivedVSPaidExchangeIncomeList();//K, N
-        List<AbstractExchangeIncome> accountExchangeIncome = exchangeIncomeContainerForOneFreight.getAccountExchangeIncomeList(); //O, P
-
-        return new PaymentTransactionEntry(actNumber, receivableAmount, actDateExchangeRate
-                , incomingPaymentAmountDividedBy100, incomingPaymentRate, outgoingPaymentAmountDividedBy100
-                , outgoingPaymentRate, commissionAmountDividedBy100, actVSIncomingPaymentExchangeIncome
-                , commissionExchangeIncome, receivedVSPaidExchangeIncome, accountExchangeIncome, actDate);
+        return oneFreightPaymentTransactionEntryList;
     }
 
     /**
@@ -98,7 +141,7 @@ public class RusRubExchangeIncomeService {
     @Nullable
     private ExchangeIncomeContainerForOneFreight buildExchangeIncomeContainerForOneFreight(List<Payment> incomingPayments
             , List<Payment> outgoingPayments, BigDecimal receivableAmount, BigDecimal payableAmount
-            , BigDecimal commissionAmount, BigDecimal actDateExchangeRateAmount, String actNumber) {
+            , BigDecimal commissionAmount, BigDecimal actDateExchangeRateAmount) {
 
         ExchangeIncomeContainerForOneFreight exchangeIncomeContainerForOneFreight = new ExchangeIncomeContainerForOneFreight();
 
@@ -388,18 +431,18 @@ public class RusRubExchangeIncomeService {
     }
 
     private void addExchangeIncome
-            (List<AbstractExchangeIncome> incomeList, AbstractExchangeIncome income,
-             BigDecimal incomeAmount, BigDecimal rate1, BigDecimal rate2, BigDecimal amount, String positiveEntry, String negativeEntry) {
-        income.setIncomeAmount(incomeAmount);
+            (List<AbstractExchangeIncome> incomeList, AbstractExchangeIncome exchangeIncome,
+             BigDecimal incomeAmount, BigDecimal rate1, BigDecimal rate2, BigDecimal paymentAmount, String positiveEntry, String negativeEntry) {
+        exchangeIncome.setExchangeIncomeAmount(incomeAmount);
         if (isPositiveOrZero(incomeAmount)) {
-            income.setJournalEntry(positiveEntry);
+            exchangeIncome.setJournalEntry(positiveEntry);
         } else {
-            income.setJournalEntry(negativeEntry);
+            exchangeIncome.setJournalEntry(negativeEntry);
         }
-        income.setAmount(amount);
-        income.setRate1(rate1);
-        income.setRate2(rate2);
-        incomeList.add(income);
+        BigDecimal paymentAmountDividedByZero = paymentAmount.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
+
+        exchangeIncome.setPaymentAmount(paymentAmountDividedByZero);
+        incomeList.add(exchangeIncome);
     }
 
     private boolean isPositiveOrZero(BigDecimal number) {
