@@ -439,9 +439,11 @@ public class RusRubExchangeIncomeService {
         } else {
             exchangeIncome.setJournalEntry(negativeEntry);
         }
-        BigDecimal paymentAmountDividedByZero = paymentAmount.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
+        BigDecimal paymentAmountDividedByZero = paymentAmount.divide(new BigDecimal("100"), 1, RoundingMode.HALF_UP);
 
         exchangeIncome.setPaymentAmount(paymentAmountDividedByZero);
+        exchangeIncome.setRate1(rate1);
+        exchangeIncome.setRate1(rate2);
         incomeList.add(exchangeIncome);
     }
 

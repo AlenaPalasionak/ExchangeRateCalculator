@@ -77,7 +77,7 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
             BigDecimal paymentAmount = paymentDateAndAmountPair.getValue();
             String paymentDate = paymentDateAndAmountPair.getKey();
             ExchangeRate exchangeRate = exchangeRateService.getExchangeRate(paymentDateAndAmountPair.getKey());
-            Payment payment = new Payment(paymentAmount, paymentDate, exchangeRate, currency);
+            Payment payment = new Payment(paymentAmount, exchangeRate);
             payments.add(payment);
         }
 
