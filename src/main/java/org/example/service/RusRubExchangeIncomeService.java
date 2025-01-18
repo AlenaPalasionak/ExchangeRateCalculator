@@ -2,7 +2,6 @@ package org.example.service;
 
 import org.example.constants.JournalEntryConstants;
 import org.example.logger.Log;
-import org.example.model.ExchangeRate;
 import org.example.model.Payment;
 import org.example.model.PaymentTransactionEntry;
 import org.example.model.non_operating_income.*;
@@ -64,7 +63,7 @@ public class RusRubExchangeIncomeService {
         String actNumber = String.valueOf(rowObject.get(ACT_NUMBER));//*****A*****
         BigDecimal receivableAmount = StringHelper.retrieveNumberFromString(String.valueOf
                 (rowObject.get(INCOMING_PAYMENT_AMOUNT)));//*****B*****
-        ExchangeRate actDateExchangeRate = exchangeRateService.getExchangeRate(actDate);
+        // ExchangeRate actDateExchangeRate = exchangeRateService.getExchangeRate(actDate);
         BigDecimal actDateExchangeRateAmount = exchangeRateService.getExchangeRateAmount(actDate);//*****C*****
 
         List<Payment> incomingPayments = foreignCurrencyAccountantTableService.buildIncomingPayment(rowObject);
@@ -208,8 +207,8 @@ public class RusRubExchangeIncomeService {
                 BigDecimal receivedVSPaidExchangeIncomeAmount = count(incomingPaymentRate, outgoingPaymentRate
                         , outgoingPaymentAmount);
                 addExchangeIncome(receivedVSPaidExchangeIncomeList, new ReceivedVSPaidExchangeIncome()
-                        , incomingPaymentRate, outgoingPaymentRate, outgoingPaymentAmount
-                        , receivedVSPaidExchangeIncomeAmount, JournalEntryConstants.ENTRY_60_11_90_7
+                        , receivedVSPaidExchangeIncomeAmount, incomingPaymentRate, outgoingPaymentRate, outgoingPaymentAmount
+                        , JournalEntryConstants.ENTRY_60_11_90_7
                         , JournalEntryConstants.ENTRY_90_4_60_11);
 
                 AbstractExchangeIncome accountExchangeIncome = new AccountExchangeIncome();

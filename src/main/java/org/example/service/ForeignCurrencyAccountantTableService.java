@@ -71,11 +71,11 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
 
         paymentDateAndAmountMap = buildPaymentDateAndAmountMap(paymentDateCellString
                 , paymentAmountCellString);
-        String currency = StringHelper.retrieveLettersFromString(paymentAmountCellString);
+      //  String currency = StringHelper.retrieveLettersFromString(paymentAmountCellString);
 
         for (Map.Entry<String, BigDecimal> paymentDateAndAmountPair : paymentDateAndAmountMap.entrySet()) {
             BigDecimal paymentAmount = paymentDateAndAmountPair.getValue();
-            String paymentDate = paymentDateAndAmountPair.getKey();
+         //   String paymentDate = paymentDateAndAmountPair.getKey();
             ExchangeRate exchangeRate = exchangeRateService.getExchangeRate(paymentDateAndAmountPair.getKey());
             Payment payment = new Payment(paymentAmount, exchangeRate);
             payments.add(payment);
@@ -84,9 +84,9 @@ public class ForeignCurrencyAccountantTableService extends AccountantTableServic
         return payments;
     }
 
-    boolean isBalance(List<Object> rowObject) {
-        return String.valueOf(rowObject.get(ACCOUNT_BALANCE)).matches("\\d+");
-    }
+//    boolean isBalance(List<Object> rowObject) {
+//        return String.valueOf(rowObject.get(ACCOUNT_BALANCE)).matches("\\d+");
+//    }
 
     BigDecimal countCommission(List<Object> rowObject) {
         String incomingPaymentSumWithCurrency = String.valueOf(rowObject.get(INCOMING_PAYMENT_AMOUNT));

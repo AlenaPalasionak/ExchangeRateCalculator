@@ -1,14 +1,14 @@
 package org.example.model.non_operating_income;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @Getter
 @Setter
 @EqualsAndHashCode
+@AllArgsConstructor
+@NoArgsConstructor
 public abstract class AbstractExchangeIncome {
     protected BigDecimal exchangeIncomeAmount;
     protected String journalEntry;
